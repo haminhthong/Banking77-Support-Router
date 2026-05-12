@@ -1,11 +1,4 @@
 
-Thiết kế hệ thống lớn (microservices, scalability, security)
-
-AI có thể hỗ trợ, nhưng:
-→ Không hiểu đầy đủ business + trade-off như con người
-
-👉 Ví dụ:
-
 Thiết kế hệ thống giống Netflix hoặc Shopee
 
 ➡️ Đây là mảng càng senior càng an toàn
