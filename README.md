@@ -1,8 +1,4 @@
 
-
-
-
-Nhận ưu đãi
 Câu hỏi này rất thực tế, và mình sẽ nói thẳng: không có mảng IT nào “miễn nhiễm” hoàn toàn với AI. Nhưng có những mảng ít bị thay thế và có những mảng phát triển cực mạnh nhờ AI.
 
 🔎 1. Mảng IT nào AI KHÓ thay thế (ít bị ảnh hưởng nhất)
