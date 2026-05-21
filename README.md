@@ -1,17 +1,4 @@
 
-AI Agents
-
-📊 3.2 Data Engineering / Data Science
-Bạn đang quan tâm → đây là lựa chọn RẤT tốt
-
-Vì sao:
-AI cần dữ liệu → data là “xăng”
-
-Công ty nào cũng cần data
-
-👉 Tech:
-
-Apache Spark
 
 Hadoop
 
