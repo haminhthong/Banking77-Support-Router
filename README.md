@@ -7,13 +7,7 @@ Nhưng:
 Pentest
 
 Security Engineer
-
-SOC Analyst
-
-➡️ Càng ngày càng hot, không bị thay thế mà còn cần nhiều hơn
-
-☁️ 1.3 DevOps / Cloud Engineering
-Quản lý hạ tầng, CI/CD, deploy hệ thống
+ CI/CD, deploy hệ thống
 
 AI hỗ trợ viết script, nhưng:
 → Không tự vận hành hệ thống production hoàn toàn
