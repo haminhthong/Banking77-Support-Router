@@ -1,20 +1,4 @@
 
-
- /  bản (Junior Dev)
-CRUD, code đơn giản
-
-AI (như GitHub Copilot) làm rất nhanh
-
-➡️ Không phải mất việc, nhưng:
-
-yêu cầu cao hơn
-
-phải hiểu sâu hơn, không chỉ “code tay”
-
-🧪 2.2 Testing manual cơ bản
-Test case đơn giản → AI automate được
-
-📄 2.3 Data nhập liệu / xử lý đơn giản
 ETL basic, cleaning đơn giản → AI làm tốt
 
 🚀 3. Mảng sẽ PHÁT TRIỂN MẠNH trong tương lai
