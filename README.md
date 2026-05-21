@@ -1,20 +1,4 @@
 
-Nhưng:
-→ Hacker luôn sáng tạo → cần con người 대응
-
-👉 Các hướng:
-
-Pentest
-
-Security Engineer
- CI/CD, deploy hệ thống
-
-AI hỗ trợ viết script, nhưng:
-→ Không tự vận hành hệ thống production hoàn toàn
-
-👉 Công nghệ:
-
-Docker
 
 Kubernetes
 
