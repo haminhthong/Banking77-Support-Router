@@ -1,0 +1,15 @@
+{
+  "true_high_risk_count": 200,
+  "escalated_count": 214,
+  "correctly_escalated": 185,
+  "escalation_recall": 0.925,
+  "escalation_precision": 0.8644859813084113,
+  "high_risk_intents": [
+    "card_swallowed",
+    "cash_withdrawal_not_recognised",
+    "compromised_card",
+    "lost_or_stolen_card",
+    "lost_or_stolen_phone"
+  ],
+  "high_risk_trigger": 0.2
+}

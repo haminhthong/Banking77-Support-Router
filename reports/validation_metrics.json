@@ -1,0 +1,41 @@
+{
+  "threshold_val_macro_f1": 0.8546547885120623,
+  "threshold_val_accuracy": 0.858,
+  "raw_validation_log_loss": 0.8721637087108692,
+  "calibrated_validation_log_loss": 0.7124933881298314,
+  "raw_validation_ece": 0.29575846357246116,
+  "calibrated_validation_ece": 0.21760288429966457,
+  "reject_threshold": 0.45,
+  "selective_coverage": 0.8046666666666666,
+  "selective_risk": 0.06545153272576631,
+  "split_rows": {
+    "train": 6999,
+    "calibration": 1500,
+    "threshold_validation": 1500,
+    "test": 3079
+  },
+  "data_quality": {
+    "split_rows": {
+      "train": 6999,
+      "calibration": 1500,
+      "threshold_validation": 1500,
+      "test": 3079
+    },
+    "class_count": 77,
+    "missing_calibration_labels": [],
+    "missing_threshold_validation_labels": [],
+    "missing_test_labels": [],
+    "pairwise_text_overlap": {
+      "train_calibration": 0,
+      "train_threshold_validation": 0,
+      "train_test": 5,
+      "calibration_threshold_validation": 0,
+      "calibration_test": 1,
+      "threshold_validation_test": 0
+    },
+    "conflicting_labels": {
+      "train_conflict_count": 0,
+      "test_conflict_count": 0
+    }
+  }
+}

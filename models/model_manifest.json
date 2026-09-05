@@ -1,0 +1,47 @@
+{
+  "model_version": "banking77-tfidf-calibrated-lr-v2",
+  "policy_version": "risk-aware-policy-v2",
+  "git_commit": "1100e59",
+  "dataset_checksums": {
+    "train_csv_sha256": "b06e26ac675513959a63135f11b94ea7786ed02da65db93a5650d8838cbc664b",
+    "test_csv_sha256": "d12d6e3bc4c3103966ae786dc435913c0c563dfa328f5a3646d0e62cfeeb474d"
+  },
+  "split_sizes": {
+    "train_rows": 6999,
+    "calibration_rows": 1500,
+    "threshold_validation_rows": 1500,
+    "test_rows": 3079
+  },
+  "tfidf_config": {
+    "ngram_range": [
+      1,
+      2
+    ],
+    "min_df": 2,
+    "max_df": 0.98,
+    "sublinear_tf": true,
+    "max_features": 50000
+  },
+  "classifier_config": {
+    "max_iter": 1200,
+    "class_weight": "balanced",
+    "n_jobs": null,
+    "C": 4.0
+  },
+  "calibration_method": "sigmoid_platt_scaling",
+  "high_risk_intents": [
+    "card_swallowed",
+    "cash_withdrawal_not_recognised",
+    "compromised_card",
+    "lost_or_stolen_card",
+    "lost_or_stolen_phone"
+  ],
+  "high_risk_trigger": 0.2,
+  "class_labels_count": 77,
+  "runtime": {
+    "python": "3.13.14",
+    "scikit_learn": "1.9.0",
+    "numpy": "2.4.6",
+    "joblib": "1.5.3"
+  }
+}

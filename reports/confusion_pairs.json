@@ -1,0 +1,242 @@
+[
+  {
+    "true_intent": "verify_my_identity",
+    "predicted_intent": "why_verify_identity",
+    "error_count": 8,
+    "avg_confidence": 0.3594,
+    "avg_margin": 0.0764,
+    "example_queries": [
+      "What can I use to verify my identify?",
+      "What do you need to verify my identity?",
+      "What do you need for my identity check?"
+    ]
+  },
+  {
+    "true_intent": "request_refund",
+    "predicted_intent": "Refund_not_showing_up",
+    "error_count": 6,
+    "avg_confidence": 0.4924,
+    "avg_margin": 0.0421,
+    "example_queries": [
+      "I need to do a refund",
+      "Can I have a refund?",
+      "How do I apply for a refund?"
+    ]
+  },
+  {
+    "true_intent": "wrong_exchange_rate_for_cash_withdrawal",
+    "predicted_intent": "card_payment_wrong_exchange_rate",
+    "error_count": 6,
+    "avg_confidence": 0.4248,
+    "avg_margin": 0.1071,
+    "example_queries": [
+      "Can you look to make sure the exchange rate is correct",
+      "Why is the exchange rate wrong for my international withdrawal?",
+      "I took out a foreign currency and the exchange rate is wrong."
+    ]
+  },
+  {
+    "true_intent": "virtual_card_not_working",
+    "predicted_intent": "getting_virtual_card",
+    "error_count": 5,
+    "avg_confidence": 0.4599,
+    "avg_margin": 0.2239,
+    "example_queries": [
+      "Why is my virtual card is being declined?",
+      "Why was my virtual card declined when attempting to setup automatic billing?",
+      "How can I fix a problem where my virtual card is rejected?"
+    ]
+  },
+  {
+    "true_intent": "top_up_failed",
+    "predicted_intent": "top_up_reverted",
+    "error_count": 5,
+    "avg_confidence": 0.407,
+    "avg_margin": 0.1048,
+    "example_queries": [
+      "Why did the app deny my top up?",
+      "Why did my top up not work?",
+      "Why was my top-up unsuccessful?"
+    ]
+  },
+  {
+    "true_intent": "pin_blocked",
+    "predicted_intent": "get_physical_card",
+    "error_count": 4,
+    "avg_confidence": 0.4956,
+    "avg_margin": 0.1945,
+    "example_queries": [
+      "How do I get my PIN unlocked?",
+      "Where can I view my PIN?",
+      "Will you reinstate my PIN?"
+    ]
+  },
+  {
+    "true_intent": "card_acceptance",
+    "predicted_intent": "card_not_working",
+    "error_count": 4,
+    "avg_confidence": 0.4744,
+    "avg_margin": 0.3421,
+    "example_queries": [
+      "I am traveling to Germany, Will I be able to use my card there?",
+      "Where should my card work?",
+      "Can I make online purchases with my card?"
+    ]
+  },
+  {
+    "true_intent": "top_up_reverted",
+    "predicted_intent": "top_up_failed",
+    "error_count": 4,
+    "avg_confidence": 0.4352,
+    "avg_margin": 0.175,
+    "example_queries": [
+      "My top-up showed as complete, but it's no longer there! What's going on here?",
+      "The app wouldn't accept my top up.",
+      "I believe my money did not go through with my top up, was there a problem on your end?"
+    ]
+  },
+  {
+    "true_intent": "pending_transfer",
+    "predicted_intent": "transfer_not_received_by_recipient",
+    "error_count": 4,
+    "avg_confidence": 0.3319,
+    "avg_margin": 0.1053,
+    "example_queries": [
+      "Why is my transfer not done yet?",
+      "I transferred money yesterday, but it still isn't available?",
+      "Why hasn't my transfer gone through yet?"
+    ]
+  },
+  {
+    "true_intent": "failed_transfer",
+    "predicted_intent": "beneficiary_not_allowed",
+    "error_count": 4,
+    "avg_confidence": 0.3697,
+    "avg_margin": 0.1477,
+    "example_queries": [
+      "I could not get my transfer to happen correctly and was wondering why?",
+      "I transferred my funds, why did it not go through?",
+      "My transfer will not go through."
+    ]
+  },
+  {
+    "true_intent": "get_disposable_virtual_card",
+    "predicted_intent": "disposable_card_limits",
+    "error_count": 4,
+    "avg_confidence": 0.612,
+    "avg_margin": 0.3196,
+    "example_queries": [
+      "Can you explain the disposable cards to me?",
+      "Can you explain disposable cards?",
+      "how many transactions can i make with a disposable card"
+    ]
+  },
+  {
+    "true_intent": "balance_not_updated_after_bank_transfer",
+    "predicted_intent": "transfer_not_received_by_recipient",
+    "error_count": 4,
+    "avg_confidence": 0.4421,
+    "avg_margin": 0.2146,
+    "example_queries": [
+      "I didn't get the money I transferred",
+      "I transferred some money but I think it has gotten lost somewhere.",
+      "I made an out of country transfer and it hasn't went through yet."
+    ]
+  },
+  {
+    "true_intent": "card_arrival",
+    "predicted_intent": "card_delivery_estimate",
+    "error_count": 3,
+    "avg_confidence": 0.5078,
+    "avg_margin": 0.252,
+    "example_queries": [
+      "When will I get my card?",
+      "How long does a card delivery take?",
+      "How do I know when my card will arrive?"
+    ]
+  },
+  {
+    "true_intent": "fiat_currency_support",
+    "predicted_intent": "exchange_via_app",
+    "error_count": 3,
+    "avg_confidence": 0.5231,
+    "avg_margin": 0.2648,
+    "example_queries": [
+      "How do I change currencies to euros?",
+      "Am I able to exchange currencies?",
+      "Can I exchange currencies?"
+    ]
+  },
+  {
+    "true_intent": "contactless_not_working",
+    "predicted_intent": "card_not_working",
+    "error_count": 3,
+    "avg_confidence": 0.4715,
+    "avg_margin": 0.3509,
+    "example_queries": [
+      "My contanctless has stopped working",
+      "The NFC payment wouldn't work on the bus today. Help?",
+      "I wanted to use my card contactless but it doesn't seem to be working, what could be the problem?"
+    ]
+  },
+  {
+    "true_intent": "pending_top_up",
+    "predicted_intent": "top_up_failed",
+    "error_count": 3,
+    "avg_confidence": 0.426,
+    "avg_margin": 0.2681,
+    "example_queries": [
+      "OMG!  I'm trying to load my card and it wont top up!  I desperately need the money either on my card or in my bank, where is it?",
+      "It doesn't look like the top-up completed.",
+      "Topping up my card is not working because I believe the top up is pending"
+    ]
+  },
+  {
+    "true_intent": "card_payment_not_recognised",
+    "predicted_intent": "compromised_card",
+    "error_count": 3,
+    "avg_confidence": 0.3547,
+    "avg_margin": 0.1335,
+    "example_queries": [
+      "Can you freeze my account?  I just saw there are transactions on my account that I don't recognize.  How can I fix this?",
+      "What should I do to get transactions off of my account if I didn't make them?  My card must have been compromised and I need to freeze it asap!",
+      "Somebody used my card to make a purchase"
+    ]
+  },
+  {
+    "true_intent": "why_verify_identity",
+    "predicted_intent": "unable_to_verify_identity",
+    "error_count": 3,
+    "avg_confidence": 0.3781,
+    "avg_margin": 0.1071,
+    "example_queries": [
+      "I'd rather not verify my identity.",
+      "Since my id hasn't been verified, when can I use my account?",
+      "I won't verify my identity."
+    ]
+  },
+  {
+    "true_intent": "unable_to_verify_identity",
+    "predicted_intent": "verify_my_identity",
+    "error_count": 3,
+    "avg_confidence": 0.3572,
+    "avg_margin": 0.0599,
+    "example_queries": [
+      "I can't verify my identity.",
+      "How do I show this stupid system that this is really my identity?",
+      "Why can't I verify my identity?"
+    ]
+  },
+  {
+    "true_intent": "get_physical_card",
+    "predicted_intent": "pin_blocked",
+    "error_count": 3,
+    "avg_confidence": 0.2819,
+    "avg_margin": 0.0809,
+    "example_queries": [
+      "what is the process for setting up a pin",
+      "I need my PIN",
+      "What do I need to do for a PIN?"
+    ]
+  }
+]

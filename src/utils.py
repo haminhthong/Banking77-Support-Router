@@ -1,7 +1,8 @@
 """Các hàm tiện ích hệ thống cho dự án AI Customer Support Router.
 
 Cung cấp các công cụ cấu hình logging, đặt seed ngẫu nhiên, lưu file JSON,
-và đo lường chỉ số Expected Calibration Error (ECE) phục vụ đánh giá độ tin cậy của mô hình.
+đo lường Expected Calibration Error (ECE), tính toán Entropy độ mập mờ,
+và tầng làm sạch thông tin nhạy cảm PII (PII Redaction) cho Telemetry Logging.
 """
 
 from __future__ import annotations
@@ -10,6 +11,7 @@ import json
 import logging
 import os
 import random
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -36,11 +38,7 @@ def setup_logging() -> None:
 
 
 def set_seed(seed: int = 42) -> None:
-    """Đảm bảo tính tái lập (reproducibility) bằng cách cố định seed ngẫu nhiên.
-
-    Args:
-        seed (int): Giá trị seed ngẫu nhiên (mặc định 42).
-    """
+    """Đảm bảo tính tái lập (reproducibility) bằng cách cố định seed ngẫu nhiên."""
     random.seed(seed)
     np.random.seed(seed)
     try:
@@ -54,12 +52,7 @@ def set_seed(seed: int = 42) -> None:
 
 
 def save_json(path: str | Path, payload: dict[str, Any]) -> None:
-    """Lưu dữ liệu kiểu dict thành file JSON định dạng UTF-8 đẹp mắt.
-
-    Args:
-        path (str | Path): Đường dẫn file lưu trữ.
-        payload (dict): Dữ liệu cần ghi file.
-    """
+    """Lưu dữ liệu kiểu dict thành file JSON định dạng UTF-8 đẹp mắt."""
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -76,15 +69,6 @@ def calculate_ece(
     ECE chia dải xác suất [0, 1] thành n_bins khoảng bằng nhau, tính chênh lệch
     tuyệt đối giữa độ chính xác thực tế (accuracy) và độ tin cậy trung bình (confidence)
     trong từng khoảng, sau đó lấy trung bình có trọng số theo số lượng mẫu.
-
-    Args:
-        confidences (np.ndarray): Xác suất dự đoán cao nhất của từng mẫu (shape: N,).
-        predictions (np.ndarray): Nhãn được dự đoán (shape: N,).
-        targets (np.ndarray): Nhãn thực tế (shape: N,).
-        n_bins (int): Số lượng khoảng chia (mặc định 10).
-
-    Returns:
-        float: Giá trị ECE nằm trong khoảng [0.0, 1.0].
     """
     if len(confidences) == 0:
         return 0.0
@@ -111,3 +95,39 @@ def calculate_ece(
             ece += (bin_size / total_samples) * abs(bin_acc - bin_conf)
 
     return float(ece)
+
+
+def calculate_entropy(probabilities: np.ndarray, eps: float = 1e-12) -> np.ndarray:
+    """Tính toán Entropy Shannon H(p) = -sum(p * log(p)) để đo độ phân tán xác suất.
+
+    Args:
+        probabilities (np.ndarray): Mảng xác suất 1D (shape: C,) hoặc 2D (shape: N, C).
+        eps (float): Hệ số chống log(0).
+
+    Returns:
+        np.ndarray: Giá trị entropy tương ứng từng mẫu.
+    """
+    p = np.clip(probabilities, eps, 1.0)
+    if p.ndim == 1:
+        return float(-np.sum(p * np.log(p)))
+    return -np.sum(p * np.log(p), axis=1)
+
+
+# Biểu thức chính quy cho PII Redaction
+_CARD_REGEX = re.compile(r"\b(?:\d[ -]*?){13,19}\b")
+_EMAIL_REGEX = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
+_PHONE_REGEX = re.compile(r"(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b")
+
+
+def redact_pii(text: str) -> str:
+    """Che giấu thông tin nhạy cảm của khách hàng trước khi log telemetry.
+
+    Bảo vệ các dữ liệu ngân hàng nhạy cảm:
+    - Số thẻ tín dụng / thẻ ghi nợ (13-19 chữ số).
+    - Địa chỉ email cá nhân.
+    - Số điện thoại liên lạc.
+    """
+    redacted = _CARD_REGEX.sub("[CARD_NUMBER]", text)
+    redacted = _EMAIL_REGEX.sub("[EMAIL]", redacted)
+    redacted = _PHONE_REGEX.sub("[PHONE_NUMBER]", redacted)
+    return redacted

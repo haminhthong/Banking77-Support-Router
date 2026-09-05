@@ -1,0 +1,23 @@
+{
+  "test_accuracy": 0.8671646638518999,
+  "test_macro_f1": 0.8666239893096427,
+  "test_top3_accuracy": 0.9594024033777201,
+  "domain_taxonomy_accuracy": 0.9373173108151998,
+  "test_ece": 0.21755497534295712,
+  "test_log_loss": 0.6673915326370828,
+  "test_brier_score": 0.26103779309940245,
+  "reject_threshold": 0.45,
+  "selective_coverage": 0.8106528093536862,
+  "selective_risk": 0.060096153846153855,
+  "accepted_accuracy": 0.9399038461538461,
+  "aurc": 0.02827588502820845,
+  "coverage_at_5pct_risk": 0.7704,
+  "coverage_at_3pct_risk": 0.6755,
+  "high_risk_escalation_recall": 0.925,
+  "high_risk_escalation_precision": 0.8644859813084113,
+  "accepted_samples": 2496,
+  "abstained_samples": 538,
+  "priority_escalated_samples": 214,
+  "auto_routed_samples": 2327,
+  "total_test_samples": 3079
+}
