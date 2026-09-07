@@ -1,0 +1,414 @@
+{
+  "intents": {
+    "activate_my_card": {
+      "domain": "card_services",
+      "queue": "card_operations",
+      "priority": "normal"
+    },
+    "card_about_to_expire": {
+      "domain": "card_services",
+      "queue": "card_operations",
+      "priority": "normal"
+    },
+    "card_acceptance": {
+      "domain": "card_services",
+      "queue": "card_operations",
+      "priority": "normal"
+    },
+    "card_arrival": {
+      "domain": "card_services",
+      "queue": "card_operations",
+      "priority": "normal"
+    },
+    "card_delivery_estimate": {
+      "domain": "card_services",
+      "queue": "card_operations",
+      "priority": "normal"
+    },
+    "card_linking": {
+      "domain": "card_services",
+      "queue": "card_operations",
+      "priority": "normal"
+    },
+    "card_not_working": {
+      "domain": "card_services",
+      "queue": "card_operations",
+      "priority": "high"
+    },
+    "contactless_not_working": {
+      "domain": "card_services",
+      "queue": "card_operations",
+      "priority": "normal"
+    },
+    "disposable_card_limits": {
+      "domain": "card_services",
+      "queue": "card_operations",
+      "priority": "normal"
+    },
+    "get_disposable_virtual_card": {
+      "domain": "card_services",
+      "queue": "card_operations",
+      "priority": "normal"
+    },
+    "get_physical_card": {
+      "domain": "card_services",
+      "queue": "card_operations",
+      "priority": "normal"
+    },
+    "getting_spare_card": {
+      "domain": "card_services",
+      "queue": "card_operations",
+      "priority": "normal"
+    },
+    "getting_virtual_card": {
+      "domain": "card_services",
+      "queue": "card_operations",
+      "priority": "normal"
+    },
+    "order_physical_card": {
+      "domain": "card_services",
+      "queue": "card_operations",
+      "priority": "normal"
+    },
+    "supported_cards_and_currencies": {
+      "domain": "card_services",
+      "queue": "card_operations",
+      "priority": "normal"
+    },
+    "virtual_card_not_working": {
+      "domain": "card_services",
+      "queue": "card_operations",
+      "priority": "high"
+    },
+    "visa_or_mastercard": {
+      "domain": "card_services",
+      "queue": "card_operations",
+      "priority": "normal"
+    },
+    "atm_support": {
+      "domain": "atm_cash",
+      "queue": "atm_support_queue",
+      "priority": "normal"
+    },
+    "balance_not_updated_after_cheque_or_cash_deposit": {
+      "domain": "atm_cash",
+      "queue": "payment_investigation_queue",
+      "priority": "high"
+    },
+    "card_swallowed": {
+      "domain": "atm_cash",
+      "queue": "fraud_security_queue",
+      "priority": "critical",
+      "risk_tier": "critical",
+      "is_high_risk": true
+    },
+    "cash_withdrawal_charge": {
+      "domain": "atm_cash",
+      "queue": "fee_inquiry_queue",
+      "priority": "normal"
+    },
+    "cash_withdrawal_not_recognised": {
+      "domain": "atm_cash",
+      "queue": "fraud_security_queue",
+      "priority": "critical",
+      "risk_tier": "critical",
+      "is_high_risk": true
+    },
+    "declined_cash_withdrawal": {
+      "domain": "atm_cash",
+      "queue": "atm_support_queue",
+      "priority": "high"
+    },
+    "pending_cash_withdrawal": {
+      "domain": "atm_cash",
+      "queue": "atm_support_queue",
+      "priority": "normal"
+    },
+    "wrong_amount_of_cash_received": {
+      "domain": "atm_cash",
+      "queue": "payment_investigation_queue",
+      "priority": "critical",
+      "risk_tier": "critical"
+    },
+    "wrong_exchange_rate_for_cash_withdrawal": {
+      "domain": "atm_cash",
+      "queue": "fee_inquiry_queue",
+      "priority": "normal"
+    },
+    "change_pin": {
+      "domain": "account_security",
+      "queue": "security_support_queue",
+      "priority": "high"
+    },
+    "compromised_card": {
+      "domain": "account_security",
+      "queue": "fraud_security_queue",
+      "priority": "critical",
+      "risk_tier": "critical",
+      "is_high_risk": true
+    },
+    "lost_or_stolen_card": {
+      "domain": "account_security",
+      "queue": "fraud_security_queue",
+      "priority": "critical",
+      "risk_tier": "critical",
+      "is_high_risk": true
+    },
+    "lost_or_stolen_phone": {
+      "domain": "account_security",
+      "queue": "fraud_security_queue",
+      "priority": "critical",
+      "risk_tier": "critical",
+      "is_high_risk": true
+    },
+    "passcode_forgotten": {
+      "domain": "account_security",
+      "queue": "security_support_queue",
+      "priority": "high"
+    },
+    "pin_blocked": {
+      "domain": "account_security",
+      "queue": "security_support_queue",
+      "priority": "high"
+    },
+    "unable_to_verify_identity": {
+      "domain": "account_security",
+      "queue": "kyc_compliance_queue",
+      "priority": "high"
+    },
+    "verify_my_identity": {
+      "domain": "account_security",
+      "queue": "kyc_compliance_queue",
+      "priority": "normal"
+    },
+    "verify_source_of_funds": {
+      "domain": "account_security",
+      "queue": "kyc_compliance_queue",
+      "priority": "high"
+    },
+    "why_verify_identity": {
+      "domain": "account_security",
+      "queue": "kyc_compliance_queue",
+      "priority": "normal"
+    },
+    "balance_not_updated_after_bank_transfer": {
+      "domain": "transfers_payments",
+      "queue": "transfer_investigation_queue",
+      "priority": "high"
+    },
+    "beneficiary_not_allowed": {
+      "domain": "transfers_payments",
+      "queue": "transfers_queue",
+      "priority": "normal"
+    },
+    "cancel_transfer": {
+      "domain": "transfers_payments",
+      "queue": "transfers_queue",
+      "priority": "high"
+    },
+    "declined_transfer": {
+      "domain": "transfers_payments",
+      "queue": "transfer_investigation_queue",
+      "priority": "high"
+    },
+    "direct_debit_payment_not_recognised": {
+      "domain": "transfers_payments",
+      "queue": "fraud_security_queue",
+      "priority": "critical",
+      "risk_tier": "critical"
+    },
+    "failed_transfer": {
+      "domain": "transfers_payments",
+      "queue": "transfer_investigation_queue",
+      "priority": "high"
+    },
+    "pending_transfer": {
+      "domain": "transfers_payments",
+      "queue": "transfers_queue",
+      "priority": "normal"
+    },
+    "receiving_money": {
+      "domain": "transfers_payments",
+      "queue": "transfers_queue",
+      "priority": "normal"
+    },
+    "transfer_fee_charged": {
+      "domain": "transfers_payments",
+      "queue": "fee_inquiry_queue",
+      "priority": "normal"
+    },
+    "transfer_into_account": {
+      "domain": "transfers_payments",
+      "queue": "transfers_queue",
+      "priority": "normal"
+    },
+    "transfer_not_received_by_recipient": {
+      "domain": "transfers_payments",
+      "queue": "transfer_investigation_queue",
+      "priority": "high"
+    },
+    "transfer_timing": {
+      "domain": "transfers_payments",
+      "queue": "transfers_queue",
+      "priority": "normal"
+    },
+    "automatic_top_up": {
+      "domain": "topup_recharge",
+      "queue": "topup_support_queue",
+      "priority": "normal"
+    },
+    "pending_top_up": {
+      "domain": "topup_recharge",
+      "queue": "topup_support_queue",
+      "priority": "normal"
+    },
+    "top_up_by_bank_transfer_charge": {
+      "domain": "topup_recharge",
+      "queue": "fee_inquiry_queue",
+      "priority": "normal"
+    },
+    "top_up_by_card_charge": {
+      "domain": "topup_recharge",
+      "queue": "fee_inquiry_queue",
+      "priority": "normal"
+    },
+    "top_up_by_cash_or_cheque": {
+      "domain": "topup_recharge",
+      "queue": "topup_support_queue",
+      "priority": "normal"
+    },
+    "top_up_failed": {
+      "domain": "topup_recharge",
+      "queue": "topup_support_queue",
+      "priority": "high"
+    },
+    "top_up_limits": {
+      "domain": "topup_recharge",
+      "queue": "topup_support_queue",
+      "priority": "normal"
+    },
+    "top_up_reverted": {
+      "domain": "topup_recharge",
+      "queue": "topup_support_queue",
+      "priority": "high"
+    },
+    "topping_up_by_card": {
+      "domain": "topup_recharge",
+      "queue": "topup_support_queue",
+      "priority": "normal"
+    },
+    "verify_top_up": {
+      "domain": "topup_recharge",
+      "queue": "topup_support_queue",
+      "priority": "normal"
+    },
+    "Refund_not_showing_up": {
+      "domain": "transactions_refunds",
+      "queue": "refund_investigation_queue",
+      "priority": "high"
+    },
+    "card_payment_fee_charged": {
+      "domain": "transactions_refunds",
+      "queue": "fee_inquiry_queue",
+      "priority": "normal"
+    },
+    "card_payment_not_recognised": {
+      "domain": "transactions_refunds",
+      "queue": "fraud_security_queue",
+      "priority": "critical",
+      "risk_tier": "critical"
+    },
+    "card_payment_wrong_exchange_rate": {
+      "domain": "transactions_refunds",
+      "queue": "fee_inquiry_queue",
+      "priority": "normal"
+    },
+    "declined_card_payment": {
+      "domain": "transactions_refunds",
+      "queue": "payment_investigation_queue",
+      "priority": "high"
+    },
+    "extra_charge_on_statement": {
+      "domain": "transactions_refunds",
+      "queue": "payment_investigation_queue",
+      "priority": "high"
+    },
+    "pending_card_payment": {
+      "domain": "transactions_refunds",
+      "queue": "payment_investigation_queue",
+      "priority": "normal"
+    },
+    "request_refund": {
+      "domain": "transactions_refunds",
+      "queue": "refund_investigation_queue",
+      "priority": "normal"
+    },
+    "reverted_card_payment?": {
+      "domain": "transactions_refunds",
+      "queue": "payment_investigation_queue",
+      "priority": "normal"
+    },
+    "transaction_charged_twice": {
+      "domain": "transactions_refunds",
+      "queue": "payment_investigation_queue",
+      "priority": "high"
+    },
+    "exchange_charge": {
+      "domain": "fees_rates",
+      "queue": "fee_inquiry_queue",
+      "priority": "normal"
+    },
+    "exchange_rate": {
+      "domain": "fees_rates",
+      "queue": "fee_inquiry_queue",
+      "priority": "normal"
+    },
+    "exchange_via_app": {
+      "domain": "fees_rates",
+      "queue": "fee_inquiry_queue",
+      "priority": "normal"
+    },
+    "fiat_currency_support": {
+      "domain": "fees_rates",
+      "queue": "fee_inquiry_queue",
+      "priority": "normal"
+    },
+    "age_limit": {
+      "domain": "account_management",
+      "queue": "account_management_queue",
+      "priority": "normal"
+    },
+    "edit_personal_details": {
+      "domain": "account_management",
+      "queue": "account_management_queue",
+      "priority": "normal"
+    },
+    "terminate_account": {
+      "domain": "account_management",
+      "queue": "account_retention_queue",
+      "priority": "high"
+    },
+    "apple_pay_or_google_pay": {
+      "domain": "app_features",
+      "queue": "digital_wallet_support_queue",
+      "priority": "normal"
+    },
+    "country_support": {
+      "domain": "international_services",
+      "queue": "international_support_queue",
+      "priority": "normal"
+    }
+  },
+  "system_queues": {
+    "priority_fraud_security": "fraud_security_queue",
+    "general_human_review": "general_human_review_queue",
+    "ood_review": "general_human_review_queue"
+  },
+  "high_risk_intents": [
+    "compromised_card",
+    "lost_or_stolen_card",
+    "lost_or_stolen_phone",
+    "card_swallowed",
+    "cash_withdrawal_not_recognised"
+  ]
+}

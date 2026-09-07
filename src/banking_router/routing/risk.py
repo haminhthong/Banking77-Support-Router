@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Sequence
 import numpy as np
 from .schemas import RiskAssessment
+from .taxonomy import TaxonomyResolver
 from ..data.contracts import DEFAULT_HIGH_RISK_INTENTS
 
 
@@ -22,10 +23,14 @@ class RiskAssessor:
         classes: Sequence[str],
         high_risk_intents: frozenset[str] | set[str] | None = None,
         high_risk_trigger: float = 0.20,
+        taxonomy: TaxonomyResolver | None = None,
     ) -> None:
         self.classes = np.array(classes)
         self.class_to_idx = {c: i for i, c in enumerate(classes)}
-        self.high_risk_intents = frozenset(high_risk_intents or DEFAULT_HIGH_RISK_INTENTS)
+        taxonomy_critical = taxonomy.get_critical_intents() if taxonomy else frozenset()
+        self.high_risk_intents = frozenset(
+            taxonomy_critical or high_risk_intents or DEFAULT_HIGH_RISK_INTENTS
+        )
         self.high_risk_trigger = float(high_risk_trigger)
 
         # Precompute indices for high-risk classes present in the model
@@ -47,39 +52,31 @@ class RiskAssessor:
         if ood_reasons:
             reason_codes.extend(ood_reasons)
 
-        # 1. Check if the top predicted intent is an explicit high-risk class
-        if top_intent in self.high_risk_intents:
-            top_idx = self.class_to_idx.get(top_intent)
-            top_score = float(probabilities[top_idx]) if top_idx is not None else 0.0
-            reason_codes.append("HIGH_RISK_INTENT")
-            return RiskAssessment(
-                high_risk_detected=True,
-                high_risk_intent=top_intent,
-                high_risk_score=top_score,
-                ood_detected=ood_detected,
-                reason_codes=reason_codes,
-            )
-
-        # 2. Inspect all high-risk classes across the full probability array
+        # Aggregate probability mass over all critical intents.  This avoids
+        # missing a security incident when several related intents each have a
+        # moderate score.
         if self.risk_indices:
             risk_probs = probabilities[self.risk_indices]
             argmax_pos = int(np.argmax(risk_probs))
             max_risk_idx = self.risk_indices[argmax_pos]
             max_risk_score = float(probabilities[max_risk_idx])
             max_risk_intent = str(self.classes[max_risk_idx])
+            critical_probability = float(np.sum(risk_probs))
 
-            if max_risk_score >= self.high_risk_trigger:
-                reason_codes.append("HIGH_RISK_CANDIDATE")
+            if critical_probability >= self.high_risk_trigger:
+                reason_codes.append("CRITICAL_RISK_MASS")
                 return RiskAssessment(
                     high_risk_detected=True,
                     high_risk_intent=max_risk_intent,
                     high_risk_score=max_risk_score,
                     ood_detected=ood_detected,
                     reason_codes=reason_codes,
+                    critical_probability=critical_probability,
                 )
         else:
             max_risk_score = 0.0
             max_risk_intent = None
+            critical_probability = 0.0
 
         return RiskAssessment(
             high_risk_detected=False,
@@ -87,4 +84,5 @@ class RiskAssessor:
             high_risk_score=max_risk_score,
             ood_detected=ood_detected,
             reason_codes=reason_codes,
+            critical_probability=critical_probability,
         )

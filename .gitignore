@@ -1,4 +1,5 @@
 __pycache__/
+reports/*.sqlite3
 *.py[cod]
 .venv/
 .env

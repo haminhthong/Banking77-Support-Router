@@ -11,6 +11,28 @@ CONFIG_DIR = PROJECT_ROOT / "configs"
 DATA_DIR = PROJECT_ROOT / "data"
 MODELS_DIR = PROJECT_ROOT / "models"
 REPORTS_DIR = PROJECT_ROOT / "reports"
+PRODUCTION_POINTER = MODELS_DIR / "production.json"
+
+
+def resolve_models_dir(models_dir: str | Path = MODELS_DIR) -> Path:
+    """Resolve the immutable release selected by the production pointer."""
+    requested = Path(models_dir)
+    pointer = requested / "production.json"
+    if pointer.exists():
+        payload = load_json(pointer)
+        release = payload.get("release")
+        if release:
+            resolved = requested / str(release)
+            if not resolved.exists():
+                raise FileNotFoundError(f"Production release does not exist: {resolved}")
+            return resolved
+    return requested
+
+
+def load_json(path: Path) -> dict[str, Any]:
+    import json
+
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def load_yaml(path: str | Path) -> dict[str, Any]:

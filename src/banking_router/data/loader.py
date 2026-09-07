@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 import pandas as pd
 from .contracts import BANKING77_77_CLASSES
-from .normalization import normalize_whitespace
+from .normalization import normalize_pii_semantically
 
 
 def read_raw_dataset(path: Path | str) -> pd.DataFrame:
@@ -42,7 +42,9 @@ def read_raw_dataset(path: Path | str) -> pd.DataFrame:
 def normalize_dataset(df: pd.DataFrame) -> pd.DataFrame:
     """Apply basic whitespace normalization to strings without altering row count."""
     norm_df = df.copy()
-    norm_df["text"] = norm_df["text"].apply(normalize_whitespace)
+    # Keep this transformation identical to the serving path.  The semantic
+    # placeholders preserve words such as "account" while removing identifiers.
+    norm_df["text"] = norm_df["text"].apply(normalize_pii_semantically)
     norm_df["intent"] = norm_df["intent"].str.strip()
     return norm_df
 

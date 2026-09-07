@@ -6,7 +6,7 @@
 [![Tests](https://img.shields.io/badge/tests-32%20passed%20(100%25)-brightgreen.svg)]()
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
 
-Hệ thống phân luồng và ra quyết định hỗ trợ khách hàng ngân hàng tự động (**Risk-Aware Banking Support Triage System**). Kết hợp **TF-IDF + Char N-gram Feature Union**, **Platt Probability Calibration**, **Out-of-Distribution (OOD) Detection**, **Decoupled Security Risk Scanner**, **Operational Queue Routing**, và **FastAPI Serving** với vòng phản hồi chuyên viên (**Human-in-the-Loop Feedback Loop**).
+Hệ thống phân luồng và ra quyết định hỗ trợ khách hàng ngân hàng tự động (**Risk-Aware Banking Support Triage System**). Kết hợp **Word + Char TF-IDF**, **optional Temperature Scaling**, **Supported-Scope Guard**, **critical-risk probability aggregation**, **queue-level routing**, và **FastAPI Serving** với vòng phản hồi chuyên viên (**Human-in-the-Loop Feedback Loop**).
 
 ---
 
@@ -81,7 +81,7 @@ BANKING77 RAW DATA (Train 10,003 rows + Official Test 3,080 rows)
 Train (70%)        Calibration (15%)    Threshold Val (15%)     Official Test (3,080)
 (6,999 rows)        (1,500 rows)         (1,500 rows)             (Untouched Benchmark)
    │                    │                    │                        │
-Word + Char         Platt Scaling        Joint Grid Search        Immutable Evaluation
+Word + Char         Raw vs Temperature   Queue Policy Search      Immutable Evaluation
 TF-IDF Pipeline     (Sigmoid Calib)      ├── Reject Threshold     ├── Classification
    │                    │                └── High-Risk Trigger    ├── Calibration
    └────────────────────┴──────────┬─────────┘                    ├── Selective Risk
@@ -170,7 +170,7 @@ Các chỉ số được đo lường độc lập trên tập **Official Test B
 | | **Macro-F1** | **89.35%** | **89.38%** | Tính đồng đều giữa các nhóm nhãn |
 | | **Top-3 Accuracy** | **96.92%** | **96.98%** | Nhãn đúng nằm trong 3 gợi ý hàng đầu |
 | | **Domain Accuracy**| **95.49%** | **95.42%** | Ánh xạ vào 10 miền nghiệp vụ (Coarse Routing) |
-| **Calibration** | **Calibrated ECE** | **0.2045** | **0.2111** | Expected Calibration Error sau Platt Scaling |
+| **Calibration** | **Temperature ECE** | **0.0205** | **0.0205** | Chỉ promote temperature nếu Policy Validation tốt hơn raw |
 | | **Log-Loss** | **0.5646** | **0.5707** | Cross-entropy loss sau hiệu chỉnh xác suất |
 | | **Brier Score** | **0.2212** | **0.2241** | Trung bình bình phương sai số xác suất |
 | **Model Selective**| **Reject Threshold** | **0.4800** | **0.4600** | Ngưỡng xác suất tối ưu chọn trên Validation |
@@ -187,9 +187,8 @@ Các chỉ số được đo lường độc lập trên tập **Official Test B
 | **Curve & Limits** | **AURC** | **0.0190** | **0.0206** | Area Under Risk-Coverage Curve (càng nhỏ càng tốt) |
 | | **Coverage @ 5% Risk** | **86.59%** | **86.56%** | Độ phủ tối đa khi chặn ngưỡng lỗi $\le 5\%$ |
 | | **Coverage @ 3% Risk** | **75.65%** | **76.82%** | Độ phủ tối đa khi chặn ngưỡng lỗi $\le 3\%$ |
-| **OOD Benchmark** | **OOD Recall** | **82.00%** | **82.00%** | Tỷ lệ nhận diện các truy vấn ngoài phạm vi |
-| *(Dedicated 50-item)*| **False Acceptance Rate** | **8.00%** | **8.00%** | Tỷ lệ truy vấn OOD bị auto-route nhầm |
-| | **Safe Containment Rate** | **92.00%** | **92.00%** | Tỷ lệ câu hỏi OOD được giữ an toàn khỏi auto-route |
+| **OOS Benchmark** | **OOS Auto-route Rate** | **32.00%** | **32.00%** | Baseline trên bộ 50 mẫu hiện tại; cần benchmark locked lớn hơn |
+| *(Dedicated 50-item)*| **OOS Containment Rate** | **68.00%** | **68.00%** | Tỷ lệ truy vấn ngoài phạm vi không bị auto-route |
 
 ---
 
@@ -208,13 +207,13 @@ Các chỉ số được đo lường độc lập trên tập **Official Test B
 - `load_official_test()` là **Report-Only & Immutable**: Tuyệt đối không drop duplicates hay lọc bỏ mẫu, bảo toàn nguyên vẹn 3,080 hàng công bố.
 
 ### 3. Tách Biệt Hoàn Toàn Display Top-K và Safety Scanner
-- **Lỗi trước đây**: Safety scan duyệt qua danh sách `top_k_candidates`. Người dùng truyền `top_k=1` thì policy chỉ kiểm tra Top-1, truyền `top_k=5` thì policy quét Top-5 $\Rightarrow$ Hành vi an ninh thay đổi theo tham số hiển thị!
+- **Safety invariant**: Risk scanner luôn quét toàn bộ vector 77 intent; `top_k` chỉ ảnh hưởng phần giải thích hiển thị.
 - **Thiết kế mới**: `RiskAssessor` **luôn luôn quét toàn bộ các lớp rủi ro cao trên toàn bộ 77 xác suất**, độc lập tuyệt đối với tham số `top_k` của người dùng.
 
 ### 4. Tách Rời Prediction, Risk Assessment, và Routing Decision
 Tách thành 3 hợp đồng dữ liệu độc lập tuân thủ Single Responsibility:
 - `IntentPrediction`: Intent dự đoán của model, Domain tương ứng, Confidence, Margin, Entropy, và danh sách Alternatives.
-- `RiskAssessment`: Cờ cảnh báo rủi ro cao, intent rủi ro phát hiện, điểm rủi ro, cờ OOD.
+- `RiskAssessment`: Critical-risk probability mass tổng hợp từ taxonomy, intent rủi ro đại diện, và scope signals.
 - `RoutingDecision`: Hành động (`auto_route`, `human_review`, `priority_human_review`), `queue_id`, `priority`, cờ review, reason codes.
 - Khi có cảnh báo `HIGH_RISK_CANDIDATE`, hệ thống ưu tiên leo thang nhưng **không thay đổi hoặc gán sai intent/domain dự đoán ban đầu của mô hình**.
 
@@ -230,11 +229,11 @@ Không dùng ngưỡng hard-code 0.45 và trigger 0.20 cố định. Bộ tối 
 $$\max \text{Auto-Route Coverage} \quad \text{s.t.} \quad \text{Error} \le 5\% \quad \text{and} \quad \text{High-Risk Recall} \ge 95\%$$
 
 ### 7. Out-of-Distribution (OOD) Guard & Benchmark Set
-- Bộ lọc OOD Guard đa tầng phát hiện các câu hỏi phi ngân hàng (crypto, bảo hiểm, bất động sản, chit-chat, gibberish) dựa trên:
+- `ScopeGuard` đa tầng phát hiện input không hợp lệ và cung cấp scope signals cho policy; lexical novelty không còn tự động reject typo vì model dùng char n-gram.
   - Kiểm tra cú pháp, độ dài cực ngắn, chuỗi ký tự lặp.
   - Phân tích độ phủ từ khóa nội dung (Content-word Footprint, lọc bỏ stopwords).
   - Độ phân tán xác suất cực hạn (xác suất $< 0.22$ trong bài toán 77 nhãn).
-- Bộ dữ liệu đánh giá riêng biệt `data/evaluation/ood.jsonl` (50 ca thực tế) kiểm chứng tỷ lệ an toàn đạt **92.00%**.
+- Bộ dữ liệu hiện tại `data/evaluation/ood.jsonl` có 50 ca; report phải đọc đúng artifact thực tế và hiển thị cả `oos_auto_route_rate` lẫn `oos_containment_rate`.
 
 ### 8. Production ModelBundle Contract & Readiness Probe
 Gói đóng gói mô hình bao gồm đầy đủ:
@@ -245,7 +244,7 @@ Gói đóng gói mô hình bao gồm đầy đủ:
 
 ### 9. Structured Telemetry & Human Feedback Loop
 - Log sự kiện có tầng lọc dữ liệu nhạy cảm PII (`redact_pii` che số thẻ 13-19 số, email, số điện thoại, số tài khoản).
-- Endpoint `POST /v1/feedback` cho phép ghi nhận các ca chuyên viên hiệu chỉnh nhãn đúng vào `reports/feedback_events.jsonl`, tạo nguồn dữ liệu cho chu kỳ tái huấn luyện trong tương lai.
+- `POST /v1/tickets/{request_id}/review` ghi review vào SQLite, tự đối chiếu với prediction ban đầu, và tạo dữ liệu validated cho offline retraining. `/v1/feedback` vẫn tồn tại cho client cũ.
 
 ---
 
@@ -286,7 +285,7 @@ Banking77-Support-Router/
 │   │   │   └── split.py               # Phân chia 4 vai trò & dual benchmark
 │   │   ├── modeling/                  # Tầng huấn luyện & hiệu chỉnh xác suất
 │   │   │   ├── pipeline.py            # FeatureUnion (Word 1-2 + Char 3-5)
-│   │   │   ├── calibration.py         # Platt Scaling Calibrator
+│   │   │   ├── calibration.py         # Optional Temperature Scaling
 │   │   │   ├── artifact.py            # ModelBundle contract & SHA-256 check
 │   │   │   └── training.py            # Huấn luyện & tối ưu ngưỡng đồng thời
 │   │   ├── routing/                   # Bộ máy phân luồng & quyết định
@@ -301,7 +300,7 @@ Banking77-Support-Router/
 │   │   │   ├── calibration.py         # ECE, Log-loss, Brier Score
 │   │   │   ├── selective.py           # Coverage, Selective Risk, AURC
 │   │   │   ├── safety.py              # Operational Safety & Confusion Pairs
-│   │   │   ├── ood_eval.py            # Đánh giá OOD Recall & False Acceptance
+│   │   │   ├── ood_eval.py            # OOS auto-route & containment metrics
 │   │   │   └── evaluator.py           # Bộ đánh giá benchmark tổng hợp
 │   │   ├── telemetry/                 # Giám sát & An toàn thông tin
 │   │   │   ├── privacy.py             # PII Masking regex
@@ -425,7 +424,7 @@ curl -X POST "http://127.0.0.1:8000/v1/route" \
   },
   "metadata": {
     "model_version": "banking77-support-triage-v3",
-    "policy_version": "risk-aware-triage-v3"
+    "policy_version": "queue-policy-v4"
   }
 }
 ```

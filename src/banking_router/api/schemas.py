@@ -52,11 +52,25 @@ class PredictionResponse(BaseModel):
     alternatives: list[IntentAlternativeResponse] = Field(default_factory=list)
 
 
+class QueuePredictionResponse(BaseModel):
+    queue: str
+    confidence: float
+    margin: float
+    probabilities: dict[str, float] = Field(default_factory=dict)
+
+
 class RiskResponse(BaseModel):
+    tier: str = "normal"
     high_risk_detected: bool
     high_risk_intent: str | None
     high_risk_score: float
+    critical_probability: float = 0.0
     ood_detected: bool
+
+
+class ScopeResponse(BaseModel):
+    supported: bool
+    signals: list[str] = Field(default_factory=list)
 
 
 class DecisionResponse(BaseModel):
@@ -71,6 +85,10 @@ class RouteResponse(BaseModel):
     """Canonical production response format for triage decisions."""
     request_id: str
     prediction: PredictionResponse
+    intent_prediction: PredictionResponse | None = None
+    queue_prediction: QueuePredictionResponse | None = None
+    scope: ScopeResponse | None = None
+    versions: dict[str, str] = Field(default_factory=dict)
     risk: RiskResponse
     decision: DecisionResponse
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -86,5 +104,7 @@ class FeedbackRequest(BaseModel):
     """Human agent correction or feedback submission schema."""
     request_id: str = Field(..., description="Mã request_id của ticket cần hiệu chỉnh")
     reviewed_intent: str = Field(..., description="Nhãn ý định chính xác được nhân viên xác nhận")
+    reviewed_queue: str | None = Field(default=None, description="Queue cuối cùng do chuyên viên xác nhận")
+    resolution: str = Field(default="reviewed", description="Kết quả xử lý review")
     reviewer_id: str = Field(default="human_agent", description="ID định danh chuyên viên xử lý")
     notes: str | None = Field(default=None, description="Ghi chú nghiệp vụ (được lọc PII tự động)")

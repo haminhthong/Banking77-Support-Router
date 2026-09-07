@@ -1,0 +1,40 @@
+{
+  "schema_version": 4,
+  "version": "banking77-support-triage-v3",
+  "policy_version": "queue-policy-v4",
+  "seed": 42,
+  "benchmark": "strict_decontaminated",
+  "class_count": 77,
+  "normalization_version": "semantic-pii-v1",
+  "features": {
+    "word": {
+      "ngram_range": [1, 2],
+      "min_df": 2,
+      "max_df": 0.98,
+      "sublinear_tf": true,
+      "max_features": 40000
+    },
+    "char": {
+      "analyzer": "char_wb",
+      "ngram_range": [3, 5],
+      "min_df": 3,
+      "sublinear_tf": true,
+      "max_features": 25000
+    }
+  },
+  "classifier": {
+    "type": "logistic_regression",
+    "params": {
+      "C": 4.0,
+      "max_iter": 1200,
+      "class_weight": "balanced",
+      "solver": "lbfgs",
+      "n_jobs": null
+    }
+  },
+  "calibration": {
+    "method": "none",
+    "candidate": "temperature",
+    "selection_split": "policy_validation"
+  }
+}

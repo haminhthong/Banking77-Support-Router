@@ -69,6 +69,8 @@ def evaluate_ood_benchmark(
         "ood_recall": round(ood_recall, 4),
         "ood_false_acceptance_rate": round(false_acceptance_rate, 4),
         "safe_containment_rate": round(safe_containment_rate, 4),
+        "oos_auto_route_rate": round(false_acceptance_rate, 4),
+        "oos_containment_rate": round(safe_containment_rate, 4),
         "auto_routed_count": auto_routed_count,
         "human_reviewed_count": human_reviewed_count,
         "priority_escalated_count": priority_escalated_count,

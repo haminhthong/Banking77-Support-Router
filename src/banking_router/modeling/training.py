@@ -10,22 +10,78 @@ import pandas as pd
 from sklearn.metrics import accuracy_score, f1_score, log_loss
 
 from .artifact import save_bundle
-from .calibration import build_calibrated_model
+from .calibration import fit_temperature, select_probability_model
 from .pipeline import build_pipeline
 from ..config import get_model_config, get_routing_policy_config, get_taxonomy_config
-from ..data import (
-    DEFAULT_HIGH_RISK_INTENTS,
-    compute_file_sha256,
-    get_domain_for_intent,
-    load_training_splits,
-    summarize_split_quality,
-)
+from ..data import DEFAULT_HIGH_RISK_INTENTS, compute_file_sha256, get_domain_for_intent, load_training_splits, summarize_split_quality
 from ..routing.policy import RoutingPolicy
+from ..routing.queue_projector import QueueProjector
 from ..routing.risk import RiskAssessor
 from ..routing.schemas import IntentPrediction
 from ..routing.taxonomy import TaxonomyResolver
+from ..data.normalization import NORMALIZATION_VERSION
 
 LOGGER = logging.getLogger("banking_router.training")
+
+
+def optimize_queue_policy_thresholds(
+    probability_model: Any,
+    val_texts: pd.Series,
+    val_targets: np.ndarray,
+    taxonomy: TaxonomyResolver,
+    target_wrong_queue_rate: float = 0.05,
+    target_critical_recall: float = 0.95,
+    min_coverage_floor: float = 0.65,
+) -> dict[str, Any]:
+    """Select queue/risk thresholds against the operational objective."""
+    probabilities = probability_model.predict_proba(val_texts)
+    classes = np.asarray(probability_model.classes_)
+    projector = QueueProjector(classes, taxonomy)
+    queue_names = np.asarray([projector.project(row).queue for row in probabilities])
+    queue_conf = np.asarray([projector.project(row).confidence for row in probabilities])
+    queue_margin = np.asarray([projector.project(row).margin for row in probabilities])
+    target_queues = np.asarray([taxonomy.get_queue(str(intent)) for intent in val_targets])
+    critical_indices = [i for i, intent in enumerate(classes) if intent in taxonomy.get_critical_intents()]
+    critical_mass = probabilities[:, critical_indices].sum(axis=1) if critical_indices else np.zeros(len(probabilities))
+    critical_targets = np.asarray([str(intent) in taxonomy.get_critical_intents() for intent in val_targets])
+
+    queue_thresholds = np.linspace(0.45, 0.95, 51)
+    risk_thresholds = np.linspace(0.10, 0.60, 51)
+    candidates: list[dict[str, Any]] = []
+    for queue_threshold in queue_thresholds:
+        for risk_threshold in risk_thresholds:
+            priority = critical_mass >= risk_threshold
+            auto = (~priority) & (queue_conf >= queue_threshold)
+            coverage = float(auto.mean())
+            wrong_queue = float((queue_names[auto] != target_queues[auto]).mean()) if auto.any() else 0.0
+            critical_recall = float((priority & critical_targets).sum() / critical_targets.sum()) if critical_targets.any() else 1.0
+            candidate = {
+                "queue_threshold": float(queue_threshold),
+                "queue_margin": 0.0,
+                "critical_threshold": float(risk_threshold),
+                "auto_route_coverage": coverage,
+                "wrong_queue_rate": wrong_queue,
+                "critical_recall": critical_recall,
+            }
+            candidates.append(candidate)
+
+    feasible = [
+        item for item in candidates
+        if item["wrong_queue_rate"] <= target_wrong_queue_rate
+        and item["critical_recall"] >= target_critical_recall
+        and item["auto_route_coverage"] >= min_coverage_floor
+    ]
+    best = max(feasible or candidates, key=lambda item: (item["auto_route_coverage"], -item["wrong_queue_rate"]))
+    return {
+        "status": "FEASIBLE_OPTIMAL" if feasible else "ROBUST_PARETO_FALLBACK",
+        "selected_queue_threshold": round(best["queue_threshold"], 4),
+        "selected_queue_margin": round(best["queue_margin"], 4),
+        "selected_critical_threshold": round(best["critical_threshold"], 4),
+        "val_auto_route_coverage": round(best["auto_route_coverage"], 4),
+        "val_wrong_queue_rate": round(best["wrong_queue_rate"], 4),
+        "val_critical_recall": round(best["critical_recall"], 4),
+        "feasible_candidate_count": len(feasible),
+    }
 
 
 def calculate_ece(
@@ -188,23 +244,21 @@ def train_and_optimize(
 
     # 2. Build and train base model on Train (70%)
     model_cfg = get_model_config()
-    pipeline, pipe_cfg = build_pipeline(
-        word_ngram_range=tuple(model_cfg.get("features", {}).get("tfidf", {}).get("ngram_range", [1, 2])),
-        use_char_features=True,
-        c_param=float(model_cfg.get("classifier", {}).get("params", {}).get("C", 4.0)),
-        max_iter=int(model_cfg.get("classifier", {}).get("params", {}).get("max_iter", 1200)),
-    )
+    pipeline, pipe_cfg = build_pipeline(model_config=model_cfg)
     pipeline.fit(train_df["text"], train_df["intent"])
 
-    # 3. Fit Platt Calibration on Calibration (15%)
-    calibrated_model = build_calibrated_model(pipeline)
-    calibrated_model.fit(cal_df["text"], cal_df["intent"])
+    # 3. Temperature is only a candidate.  The final raw-vs-temperature
+    # choice is made on the separate Policy Validation split below.
+    temperature_candidate = fit_temperature(pipeline, cal_df["text"], cal_df["intent"])
 
-    # 4. Measure calibration metrics on Threshold Validation (15%)
+    # 4. Compare probability models on Policy Validation (15%)
     raw_proba_val = pipeline.predict_proba(val_df["text"])
-    cal_proba_val = calibrated_model.predict_proba(val_df["text"])
+    probability_model, calibration_report = select_probability_model(
+        pipeline, temperature_candidate, val_df["text"], val_df["intent"]
+    )
+    cal_proba_val = probability_model.predict_proba(val_df["text"])
 
-    classes = calibrated_model.classes_
+    classes = probability_model.classes_
     raw_preds = classes[raw_proba_val.argmax(axis=1)]
     cal_preds = classes[cal_proba_val.argmax(axis=1)]
     raw_confs = raw_proba_val.max(axis=1)
@@ -216,33 +270,37 @@ def train_and_optimize(
     raw_loss = float(log_loss(targets_val, raw_proba_val, labels=classes))
     cal_loss = float(log_loss(targets_val, cal_proba_val, labels=classes))
 
-    # 5. Joint Policy Optimization on Threshold Validation (15%)
+    # 5. Optimize the operational queue policy, not fine intent confidence.
     policy_cfg = get_routing_policy_config()
     opt_slos = policy_cfg.get("optimization", {})
-    policy_opt = optimize_policy_thresholds(
-        calibrated_model=calibrated_model,
+    taxonomy_cfg = get_taxonomy_config()
+    taxonomy = TaxonomyResolver(taxonomy_cfg)
+    policy_opt = optimize_queue_policy_thresholds(
+        probability_model=probability_model,
         val_texts=val_df["text"],
         val_targets=targets_val,
-        target_selective_risk=float(opt_slos.get("target_selective_risk", 0.05)),
-        target_high_risk_recall=float(opt_slos.get("target_high_risk_recall", 0.95)),
+        taxonomy=taxonomy,
+        target_wrong_queue_rate=float(opt_slos.get("target_wrong_queue_rate", 0.05)),
+        target_critical_recall=float(opt_slos.get("target_critical_recall", 0.95)),
         min_coverage_floor=float(opt_slos.get("min_coverage_floor", 0.65)),
-        high_risk_intents=DEFAULT_HIGH_RISK_INTENTS,
     )
 
-    chosen_threshold = float(policy_opt["selected_reject_threshold"])
-    chosen_risk_trigger = float(policy_opt["selected_high_risk_trigger"])
+    chosen_threshold = float(policy_opt["selected_queue_threshold"])
+    chosen_risk_trigger = float(policy_opt["selected_critical_threshold"])
 
     # 6. Save Bundle & Manifest
-    taxonomy_cfg = get_taxonomy_config()
     train_sha = compute_file_sha256("data/raw/train.csv")
     test_sha = compute_file_sha256("data/raw/test.csv")
 
     config_payload = {
-        "schema_version": 3,
-        "version": "banking77-support-triage-v3",
-        "policy_version": "risk-aware-triage-v3",
+        "schema_version": 4,
+        "version": model_cfg.get("model_version", "banking77-router-v4"),
+        "policy_version": policy_cfg.get("policy_version", "queue-policy-v4"),
         "seed": seed,
         "benchmark": benchmark,
+        "queue_threshold": chosen_threshold,
+        "critical_threshold": chosen_risk_trigger,
+        # Legacy keys kept for old clients; runtime uses routing_policy.json.
         "threshold": chosen_threshold,
         "high_risk_trigger": chosen_risk_trigger,
         "min_margin": float(policy_cfg.get("runtime_thresholds", {}).get("min_margin", 0.02)),
@@ -254,21 +312,29 @@ def train_and_optimize(
         "calibrated_validation_log_loss": cal_loss,
         "domain_map": {intent: get_domain_for_intent(intent) for intent in classes},
         "policy_optimization": policy_opt,
+        "calibration": calibration_report,
+        "normalization_version": NORMALIZATION_VERSION,
     }
 
     policy_payload = {
-        "threshold": chosen_threshold,
-        "high_risk_trigger": chosen_risk_trigger,
-        "min_margin": config_payload["min_margin"],
-        "max_entropy": config_payload["max_entropy"],
-        "high_risk_intents": sorted(list(DEFAULT_HIGH_RISK_INTENTS)),
-        "target_selective_risk": opt_slos.get("target_selective_risk", 0.05),
-        "target_high_risk_recall": opt_slos.get("target_high_risk_recall", 0.95),
+        "policy_version": policy_cfg.get("policy_version", "queue-policy-v4"),
+        "scope": {
+            "min_chars": int(policy_cfg.get("ood_guard", {}).get("min_text_length_chars", 4)),
+            "min_tokens": int(policy_cfg.get("ood_guard", {}).get("min_tokens", 2)),
+            "low_confidence_threshold": float(policy_cfg.get("ood_guard", {}).get("low_confidence_ood_threshold", 0.22)),
+            "lexical_novelty_threshold": float(policy_cfg.get("ood_guard", {}).get("lexical_similarity_threshold", 0.08)),
+        },
+        "auto_route": {
+            "min_queue_probability": chosen_threshold,
+            "min_queue_margin": float(policy_cfg.get("runtime_thresholds", {}).get("min_margin", 0.02)),
+        },
+        "critical_risk": {"minimum_probability": chosen_risk_trigger},
+        "normalization_version": NORMALIZATION_VERSION,
     }
 
     bundle = save_bundle(
         target_dir=m_dir,
-        calibrated_model=calibrated_model,
+        calibrated_model=probability_model,
         config_payload=config_payload,
         policy_payload=policy_payload,
         taxonomy_payload=taxonomy_cfg,
@@ -281,6 +347,8 @@ def train_and_optimize(
             "test": len(test_df),
         },
         pipeline_config=pipe_cfg,
+        model_version=str(model_cfg.get("model_version", "banking77-tfidf-char-lr-v4")),
+        policy_version=str(policy_cfg.get("policy_version", "queue-policy-v4")),
     )
 
     # 7. Save Validation Report
@@ -292,6 +360,7 @@ def train_and_optimize(
         "calibrated_validation_log_loss": cal_loss,
         "raw_validation_ece": raw_ece,
         "calibrated_validation_ece": cal_ece,
+        "calibration": calibration_report,
         "policy_optimization": policy_opt,
         "split_rows": {
             "train": len(train_df),

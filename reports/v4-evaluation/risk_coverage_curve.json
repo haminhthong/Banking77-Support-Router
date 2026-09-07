@@ -1,0 +1,507 @@
+{
+  "aurc": 0.0148,
+  "coverage_at_5pct_risk": 0.9078,
+  "coverage_at_3pct_risk": 0.8357,
+  "curve": [
+    {
+      "threshold": 0.0,
+      "coverage": 1.0,
+      "risk": 0.0945
+    },
+    {
+      "threshold": 0.0101,
+      "coverage": 1.0,
+      "risk": 0.0945
+    },
+    {
+      "threshold": 0.0202,
+      "coverage": 1.0,
+      "risk": 0.0945
+    },
+    {
+      "threshold": 0.0303,
+      "coverage": 1.0,
+      "risk": 0.0945
+    },
+    {
+      "threshold": 0.0404,
+      "coverage": 1.0,
+      "risk": 0.0945
+    },
+    {
+      "threshold": 0.0505,
+      "coverage": 1.0,
+      "risk": 0.0945
+    },
+    {
+      "threshold": 0.0606,
+      "coverage": 1.0,
+      "risk": 0.0945
+    },
+    {
+      "threshold": 0.0707,
+      "coverage": 1.0,
+      "risk": 0.0945
+    },
+    {
+      "threshold": 0.0808,
+      "coverage": 0.9997,
+      "risk": 0.0942
+    },
+    {
+      "threshold": 0.0909,
+      "coverage": 0.9994,
+      "risk": 0.0942
+    },
+    {
+      "threshold": 0.101,
+      "coverage": 0.9994,
+      "risk": 0.0942
+    },
+    {
+      "threshold": 0.1111,
+      "coverage": 0.9994,
+      "risk": 0.0942
+    },
+    {
+      "threshold": 0.1212,
+      "coverage": 0.9994,
+      "risk": 0.0942
+    },
+    {
+      "threshold": 0.1313,
+      "coverage": 0.9994,
+      "risk": 0.0942
+    },
+    {
+      "threshold": 0.1414,
+      "coverage": 0.9994,
+      "risk": 0.0942
+    },
+    {
+      "threshold": 0.1515,
+      "coverage": 0.9994,
+      "risk": 0.0942
+    },
+    {
+      "threshold": 0.1616,
+      "coverage": 0.9994,
+      "risk": 0.0942
+    },
+    {
+      "threshold": 0.1717,
+      "coverage": 0.9994,
+      "risk": 0.0942
+    },
+    {
+      "threshold": 0.1818,
+      "coverage": 0.9994,
+      "risk": 0.0942
+    },
+    {
+      "threshold": 0.1919,
+      "coverage": 0.9994,
+      "risk": 0.0942
+    },
+    {
+      "threshold": 0.202,
+      "coverage": 0.999,
+      "risk": 0.0939
+    },
+    {
+      "threshold": 0.2121,
+      "coverage": 0.999,
+      "risk": 0.0939
+    },
+    {
+      "threshold": 0.2222,
+      "coverage": 0.9984,
+      "risk": 0.0937
+    },
+    {
+      "threshold": 0.2323,
+      "coverage": 0.9968,
+      "risk": 0.0925
+    },
+    {
+      "threshold": 0.2424,
+      "coverage": 0.9958,
+      "risk": 0.0923
+    },
+    {
+      "threshold": 0.2525,
+      "coverage": 0.9945,
+      "risk": 0.0914
+    },
+    {
+      "threshold": 0.2626,
+      "coverage": 0.9938,
+      "risk": 0.0915
+    },
+    {
+      "threshold": 0.2727,
+      "coverage": 0.9925,
+      "risk": 0.0906
+    },
+    {
+      "threshold": 0.2828,
+      "coverage": 0.9909,
+      "risk": 0.0898
+    },
+    {
+      "threshold": 0.2929,
+      "coverage": 0.9886,
+      "risk": 0.0887
+    },
+    {
+      "threshold": 0.303,
+      "coverage": 0.9873,
+      "risk": 0.0878
+    },
+    {
+      "threshold": 0.3131,
+      "coverage": 0.9857,
+      "risk": 0.0866
+    },
+    {
+      "threshold": 0.3232,
+      "coverage": 0.9841,
+      "risk": 0.0855
+    },
+    {
+      "threshold": 0.3333,
+      "coverage": 0.9828,
+      "risk": 0.0849
+    },
+    {
+      "threshold": 0.3434,
+      "coverage": 0.9815,
+      "risk": 0.084
+    },
+    {
+      "threshold": 0.3535,
+      "coverage": 0.9799,
+      "risk": 0.0832
+    },
+    {
+      "threshold": 0.3636,
+      "coverage": 0.9779,
+      "risk": 0.083
+    },
+    {
+      "threshold": 0.3737,
+      "coverage": 0.9756,
+      "risk": 0.0815
+    },
+    {
+      "threshold": 0.3838,
+      "coverage": 0.9737,
+      "risk": 0.081
+    },
+    {
+      "threshold": 0.3939,
+      "coverage": 0.9724,
+      "risk": 0.0798
+    },
+    {
+      "threshold": 0.404,
+      "coverage": 0.9711,
+      "risk": 0.0792
+    },
+    {
+      "threshold": 0.4141,
+      "coverage": 0.9679,
+      "risk": 0.0772
+    },
+    {
+      "threshold": 0.4242,
+      "coverage": 0.9653,
+      "risk": 0.0753
+    },
+    {
+      "threshold": 0.4343,
+      "coverage": 0.9636,
+      "risk": 0.0741
+    },
+    {
+      "threshold": 0.4444,
+      "coverage": 0.9623,
+      "risk": 0.0735
+    },
+    {
+      "threshold": 0.4545,
+      "coverage": 0.9607,
+      "risk": 0.0723
+    },
+    {
+      "threshold": 0.4646,
+      "coverage": 0.9558,
+      "risk": 0.0703
+    },
+    {
+      "threshold": 0.4747,
+      "coverage": 0.9539,
+      "risk": 0.0694
+    },
+    {
+      "threshold": 0.4848,
+      "coverage": 0.9526,
+      "risk": 0.0695
+    },
+    {
+      "threshold": 0.4949,
+      "coverage": 0.9474,
+      "risk": 0.0668
+    },
+    {
+      "threshold": 0.5051,
+      "coverage": 0.9445,
+      "risk": 0.066
+    },
+    {
+      "threshold": 0.5152,
+      "coverage": 0.9409,
+      "risk": 0.0649
+    },
+    {
+      "threshold": 0.5253,
+      "coverage": 0.9373,
+      "risk": 0.0634
+    },
+    {
+      "threshold": 0.5354,
+      "coverage": 0.9338,
+      "risk": 0.0619
+    },
+    {
+      "threshold": 0.5455,
+      "coverage": 0.9299,
+      "risk": 0.0604
+    },
+    {
+      "threshold": 0.5556,
+      "coverage": 0.9276,
+      "risk": 0.0595
+    },
+    {
+      "threshold": 0.5657,
+      "coverage": 0.9237,
+      "risk": 0.058
+    },
+    {
+      "threshold": 0.5758,
+      "coverage": 0.9205,
+      "risk": 0.0571
+    },
+    {
+      "threshold": 0.5859,
+      "coverage": 0.9182,
+      "risk": 0.0562
+    },
+    {
+      "threshold": 0.596,
+      "coverage": 0.9143,
+      "risk": 0.0529
+    },
+    {
+      "threshold": 0.6061,
+      "coverage": 0.9114,
+      "risk": 0.0509
+    },
+    {
+      "threshold": 0.6162,
+      "coverage": 0.9078,
+      "risk": 0.0497
+    },
+    {
+      "threshold": 0.6263,
+      "coverage": 0.9045,
+      "risk": 0.0488
+    },
+    {
+      "threshold": 0.6364,
+      "coverage": 0.9016,
+      "risk": 0.0479
+    },
+    {
+      "threshold": 0.6465,
+      "coverage": 0.899,
+      "risk": 0.0469
+    },
+    {
+      "threshold": 0.6566,
+      "coverage": 0.8942,
+      "risk": 0.0458
+    },
+    {
+      "threshold": 0.6667,
+      "coverage": 0.8903,
+      "risk": 0.046
+    },
+    {
+      "threshold": 0.6768,
+      "coverage": 0.886,
+      "risk": 0.0443
+    },
+    {
+      "threshold": 0.6869,
+      "coverage": 0.8828,
+      "risk": 0.0434
+    },
+    {
+      "threshold": 0.697,
+      "coverage": 0.8786,
+      "risk": 0.0429
+    },
+    {
+      "threshold": 0.7071,
+      "coverage": 0.8734,
+      "risk": 0.0405
+    },
+    {
+      "threshold": 0.7172,
+      "coverage": 0.8672,
+      "risk": 0.0382
+    },
+    {
+      "threshold": 0.7273,
+      "coverage": 0.8614,
+      "risk": 0.0362
+    },
+    {
+      "threshold": 0.7374,
+      "coverage": 0.8575,
+      "risk": 0.0356
+    },
+    {
+      "threshold": 0.7475,
+      "coverage": 0.8549,
+      "risk": 0.0346
+    },
+    {
+      "threshold": 0.7576,
+      "coverage": 0.8513,
+      "risk": 0.0332
+    },
+    {
+      "threshold": 0.7677,
+      "coverage": 0.8474,
+      "risk": 0.0318
+    },
+    {
+      "threshold": 0.7778,
+      "coverage": 0.8448,
+      "risk": 0.0315
+    },
+    {
+      "threshold": 0.7879,
+      "coverage": 0.8406,
+      "risk": 0.0313
+    },
+    {
+      "threshold": 0.798,
+      "coverage": 0.8357,
+      "risk": 0.0299
+    },
+    {
+      "threshold": 0.8081,
+      "coverage": 0.8312,
+      "risk": 0.0293
+    },
+    {
+      "threshold": 0.8182,
+      "coverage": 0.8273,
+      "risk": 0.0283
+    },
+    {
+      "threshold": 0.8283,
+      "coverage": 0.8218,
+      "risk": 0.0281
+    },
+    {
+      "threshold": 0.8384,
+      "coverage": 0.8162,
+      "risk": 0.0267
+    },
+    {
+      "threshold": 0.8485,
+      "coverage": 0.8104,
+      "risk": 0.0264
+    },
+    {
+      "threshold": 0.8586,
+      "coverage": 0.8029,
+      "risk": 0.0251
+    },
+    {
+      "threshold": 0.8687,
+      "coverage": 0.7987,
+      "risk": 0.0244
+    },
+    {
+      "threshold": 0.8788,
+      "coverage": 0.7857,
+      "risk": 0.0236
+    },
+    {
+      "threshold": 0.8889,
+      "coverage": 0.7789,
+      "risk": 0.0233
+    },
+    {
+      "threshold": 0.899,
+      "coverage": 0.7662,
+      "risk": 0.0225
+    },
+    {
+      "threshold": 0.9091,
+      "coverage": 0.7552,
+      "risk": 0.0202
+    },
+    {
+      "threshold": 0.9192,
+      "coverage": 0.7419,
+      "risk": 0.0184
+    },
+    {
+      "threshold": 0.9293,
+      "coverage": 0.7286,
+      "risk": 0.0147
+    },
+    {
+      "threshold": 0.9394,
+      "coverage": 0.7123,
+      "risk": 0.0123
+    },
+    {
+      "threshold": 0.9495,
+      "coverage": 0.6932,
+      "risk": 0.0103
+    },
+    {
+      "threshold": 0.9596,
+      "coverage": 0.6731,
+      "risk": 0.0092
+    },
+    {
+      "threshold": 0.9697,
+      "coverage": 0.6403,
+      "risk": 0.0076
+    },
+    {
+      "threshold": 0.9798,
+      "coverage": 0.5951,
+      "risk": 0.006
+    },
+    {
+      "threshold": 0.9899,
+      "coverage": 0.5175,
+      "risk": 0.005
+    },
+    {
+      "threshold": 1.0,
+      "coverage": 0.0,
+      "risk": 0.0
+    }
+  ]
+}

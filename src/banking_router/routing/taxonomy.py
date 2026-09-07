@@ -6,8 +6,6 @@ from typing import Any
 from ..config import get_taxonomy_config
 from ..data.contracts import (
     BANKING77_77_CLASSES,
-    DEFAULT_HIGH_RISK_INTENTS,
-    INTENT_TO_DOMAIN,
     get_domain_for_intent,
 )
 
@@ -32,9 +30,17 @@ class TaxonomyResolver:
                 "ood_review": "general_human_review_queue",
             },
         )
-        self.high_risk_intents: frozenset[str] = frozenset(
-            cfg.get("high_risk_intents", list(DEFAULT_HIGH_RISK_INTENTS))
+        # ``risk_tier`` is authoritative.  The legacy ``high_risk_intents``
+        # field is accepted for reading old bundles but is deliberately not
+        # used to determine runtime safety.
+        self.critical_intents: frozenset[str] = frozenset(
+            intent
+            for intent, values in self.intents_cfg.items()
+            if str(values.get("risk_tier", "")).lower() == "critical"
+            or str(values.get("priority", "")).lower() == "critical"
+            or bool(values.get("is_high_risk", False))
         )
+        self.high_risk_intents = self.critical_intents
 
     def get_domain(self, intent: str) -> str:
         """Get high-level domain for an intent."""
@@ -57,3 +63,14 @@ class TaxonomyResolver:
         if intent in self.high_risk_intents:
             return "critical"
         return "normal"
+
+    def get_risk_tier(self, intent: str) -> str:
+        """Resolve risk independently from the operational queue."""
+        if intent in self.intents_cfg:
+            values = self.intents_cfg[intent]
+            return str(values.get("risk_tier", values.get("priority", "normal"))).lower()
+        return "critical" if intent in self.critical_intents else "normal"
+
+    def get_critical_intents(self) -> frozenset[str]:
+        """Return critical intents derived from taxonomy metadata."""
+        return self.critical_intents

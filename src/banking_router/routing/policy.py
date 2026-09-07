@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from typing import Any, Sequence
-from .schemas import IntentPrediction, RiskAssessment, RoutingDecision
+from .schemas import IntentPrediction, QueuePrediction, RiskAssessment, RoutingDecision
 from .taxonomy import TaxonomyResolver
 
 
@@ -20,6 +20,8 @@ class RoutingPolicy:
     def __init__(
         self,
         threshold: float = 0.45,
+        queue_threshold: float | None = None,
+        queue_margin: float | None = None,
         min_margin: float | None = None,
         max_entropy: float | None = None,
         high_risk_trigger: float = 0.20,
@@ -35,6 +37,8 @@ class RoutingPolicy:
             raise ValueError(f"max_entropy must be >= 0.0, got {max_entropy}")
 
         self.threshold = float(threshold)
+        self.queue_threshold = float(queue_threshold if queue_threshold is not None else threshold)
+        self.queue_margin = float(queue_margin if queue_margin is not None else (min_margin or 0.0))
         self.min_margin = float(min_margin) if min_margin is not None else None
         self.max_entropy = float(max_entropy) if max_entropy is not None else None
         self.high_risk_trigger = float(high_risk_trigger)
@@ -44,10 +48,11 @@ class RoutingPolicy:
         self,
         prediction: IntentPrediction,
         risk: RiskAssessment,
+        queue_prediction: QueuePrediction | None = None,
     ) -> RoutingDecision:
         """Evaluate triage policy on decoupled prediction and risk signals."""
         # 1. High-Risk Security Override
-        if risk.high_risk_detected:
+        if risk.high_risk_detected or risk.critical_probability >= self.high_risk_trigger:
             return RoutingDecision(
                 action="priority_human_review",
                 queue_id="fraud_security_queue",
@@ -71,24 +76,32 @@ class RoutingPolicy:
             )
 
         # 3. Uncertainty Gate (Selective Classification)
-        if prediction.confidence < self.threshold:
+        # Queue confidence is the business decision signal.  The intent score
+        # remains useful for explanation but must not gate routing directly.
+        if (
+            (queue_prediction is not None and queue_prediction.confidence < self.queue_threshold)
+            or (queue_prediction is None and prediction.confidence < self.threshold)
+        ):
             return RoutingDecision(
                 action="human_review",
                 queue_id="general_human_review_queue",
                 priority="normal",
                 requires_human_review=True,
-                reason_codes=["LOW_CONFIDENCE"],
+                reason_codes=["LOW_QUEUE_CONFIDENCE" if queue_prediction is not None else "LOW_CONFIDENCE"],
                 intent=None,
                 domain=None,
             )
 
-        if self.min_margin is not None and prediction.margin < self.min_margin:
+        if (
+            (queue_prediction is not None and queue_prediction.margin < self.queue_margin)
+            or (queue_prediction is None and self.min_margin is not None and prediction.margin < self.min_margin)
+        ):
             return RoutingDecision(
                 action="human_review",
                 queue_id="general_human_review_queue",
                 priority="normal",
                 requires_human_review=True,
-                reason_codes=["AMBIGUOUS_MARGIN"],
+                reason_codes=["AMBIGUOUS_QUEUE_MARGIN" if queue_prediction is not None else "AMBIGUOUS_MARGIN"],
                 intent=None,
                 domain=None,
             )
@@ -105,7 +118,7 @@ class RoutingPolicy:
             )
 
         # 4. Safe Operational Auto-Routing
-        queue = self.taxonomy.get_queue(prediction.intent)
+        queue = queue_prediction.queue if queue_prediction is not None else self.taxonomy.get_queue(prediction.intent)
         priority = self.taxonomy.get_priority(prediction.intent)
         return RoutingDecision(
             action="auto_route",
@@ -148,7 +161,7 @@ class RoutingPolicy:
         high_risk_score = 0.0
         reason_codes: list[str] = []
 
-        if top_intent in DEFAULT_HIGH_RISK_INTENTS:
+        if top_intent in self.taxonomy.get_critical_intents() or top_intent in DEFAULT_HIGH_RISK_INTENTS:
             high_risk_detected = True
             high_risk_intent = top_intent
             high_risk_score = confidence

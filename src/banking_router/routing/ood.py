@@ -27,13 +27,15 @@ STOPWORDS = frozenset({
 })
 
 
-class OODGuard:
-    """Detects queries that lie outside the supported 77 banking intents.
+class ScopeGuard:
+    """Guard supported scope without claiming statistical OOD detection.
 
     Employs a multi-signal gate combining:
     1. Input syntactic & length validity (too short, pure gibberish/symbols).
-    2. Domain content-word overlap against banking vocabulary (filtering stopwords).
-    3. Extreme predictive dispersion / uncertainty (confidence < 0.22 in 77-class model).
+    2. Scope signals from domain vocabulary and model uncertainty.
+
+    Lexical novelty is deliberately a signal rather than an automatic reject:
+    the character n-gram model is designed to tolerate misspellings.
     """
 
     def __init__(
@@ -41,7 +43,7 @@ class OODGuard:
         vocabulary: set[str] | None = None,
         min_chars: int = 4,
         min_tokens: int = 2,
-        lexical_similarity_threshold: float = 0.30,
+        lexical_similarity_threshold: float = 0.08,
         low_confidence_ood_threshold: float = 0.22,
     ) -> None:
         self.vocabulary = vocabulary or set()
@@ -73,10 +75,11 @@ class OODGuard:
             return True, ["OOD_TOO_SHORT"]
 
         if len(tokens) < self.min_tokens:
-            if len(tokens) == 1 and tokens[0] not in self.vocabulary:
-                return True, ["OUT_OF_SCOPE_QUERY"]
             if len(tokens) == 0:
                 return True, ["OOD_NO_TOKENS"]
+            # A single unknown token is a scope signal, not a hard reject.
+            if tokens[0] not in self.vocabulary:
+                return True, ["SCOPE_LOW_INFORMATION"]
 
         # Repeated characters / gibberish detection
         if re.search(r"(.)\1{4,}", clean_text.lower()):
@@ -86,10 +89,10 @@ class OODGuard:
         if re.fullmatch(r"[\d\W_]+", clean_text):
             return True, ["OOD_NON_TEXTUAL"]
 
-        # 2. Extreme predictive dispersion in 77 classes
-        # Uniform probability is 1/77 ~= 0.013. Confidence < 0.22 indicates severe query ambiguity/OOD.
-        if confidence < self.low_confidence_ood_threshold:
-            return True, ["OUT_OF_SCOPE_QUERY"]
+        # 2. Extreme predictive dispersion in 77 classes.  Combine it with
+        # lexical novelty so typo-tolerant char features are not rejected just
+        # because a token is absent from the word vocabulary.
+        low_confidence = confidence < self.low_confidence_ood_threshold
 
         # 3. Domain Content Keyword Footprint
         content_tokens = [t for t in tokens if t not in STOPWORDS]
@@ -101,10 +104,14 @@ class OODGuard:
                 known_content = [t for t in content_tokens if t in self.vocabulary]
                 content_ratio = len(known_content) / len(content_tokens)
 
-                if content_ratio == 0.0:
+                if content_ratio == 0.0 and low_confidence:
                     return True, ["OUT_OF_SCOPE_QUERY"]
 
-                if content_ratio < self.lexical_similarity_threshold and confidence < 0.65:
+                if content_ratio < self.lexical_similarity_threshold and low_confidence:
                     return True, ["OUT_OF_SCOPE_QUERY"]
 
         return False, []
+
+
+# Compatibility alias: callers can migrate without changing the behavior.
+OODGuard = ScopeGuard

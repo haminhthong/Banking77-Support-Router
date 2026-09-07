@@ -1,14 +1,14 @@
 {
   "schema_version": 4,
-  "model_version": "banking77-support-triage-v3",
-  "policy_version": "risk-aware-triage-v3",
-  "git_commit": "11ec6d1",
-  "artifact_sha256": "feea242775841026accc409f4ad2c7ba0f0e496771b07be3392021e73958135a",
+  "model_version": "banking77-tfidf-char-lr-v4",
+  "policy_version": "queue-policy-v4",
+  "git_commit": "unknown",
+  "artifact_sha256": "671faa4ab2b9d8b05be8783548a00aec3052dabc071c3f3f1fc90cf876fc088d",
   "artifact_hashes": {
-    "model": "feea242775841026accc409f4ad2c7ba0f0e496771b07be3392021e73958135a",
-    "model_config": "6e83a9060512cde44e0ca1f96d65173d2175156c3da21e5069a337e3f95333b0",
-    "taxonomy": "86249edcec51c853ed0e5347954c79b1b3d91d0c31e66d2c3ff47b4170310a78",
-    "routing_policy": "4245039bcaf2e9274b63befda178d6f6d418b785adfa9566a09d7a9bd275308b"
+    "model": "671faa4ab2b9d8b05be8783548a00aec3052dabc071c3f3f1fc90cf876fc088d",
+    "model_config": "15788d5fb66d30521b9c788185da924ce6a07ceb218bc4e063f52eaa33a3b916",
+    "taxonomy": "e704d6ff80e0f981abe9e1645af50815b8c5459e83ebb147739699e651643647",
+    "routing_policy": "dda0d3898fd592944ad793d00abdc893c22e2a51aa702548af107d2863070ecf"
   },
   "class_labels_sha256": "cc9ba3a192079ea53c3f39c82004ca17fed9b788c656e03a60bc394d339fd20e",
   "dataset_checksums": {
@@ -31,7 +31,7 @@
         "min_df": 2,
         "max_df": 0.98,
         "sublinear_tf": true,
-        "max_features": 40000
+        "max_features": 50000
       },
       "char": {
         "analyzer": "char_wb",
@@ -54,17 +54,10 @@
   },
   "class_labels_count": 77,
   "normalization_version": "semantic-pii-v1",
-  "high_risk_intents": [
-    "card_swallowed",
-    "cash_withdrawal_not_recognised",
-    "compromised_card",
-    "lost_or_stolen_card",
-    "lost_or_stolen_phone"
-  ],
   "runtime": {
-    "python": "3.13.14",
+    "python": "3.12.14",
     "scikit_learn": "1.9.0",
-    "numpy": "2.4.6",
-    "joblib": "1.5.3"
+    "numpy": "2.3.5",
+    "joblib": "1.6.0"
   }
 }

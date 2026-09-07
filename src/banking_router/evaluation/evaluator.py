@@ -15,11 +15,9 @@ from .classification import evaluate_classification
 from .ood_eval import evaluate_ood_benchmark
 from .safety import analyze_confusion_pairs, evaluate_operational_policy_metrics
 from .selective import compute_risk_coverage_curve, evaluate_selective_metrics
-from ..data import (
-    DEFAULT_HIGH_RISK_INTENTS,
-    load_official_test,
-)
+from ..data import load_official_test
 from ..modeling.artifact import load_and_validate_bundle
+from ..config import resolve_models_dir
 from ..routing.ood import OODGuard
 from ..routing.policy import RoutingPolicy
 from ..routing.risk import RiskAssessor
@@ -36,22 +34,25 @@ def evaluate_test_benchmark(
     ood_file: str | Path = "data/evaluation/ood.jsonl",
 ) -> dict[str, Any]:
     """Run rigorous multi-layer evaluation on the untouched Official Test Benchmark."""
-    m_dir = Path(models_dir)
+    m_dir = resolve_models_dir(models_dir)
     r_dir = Path(reports_dir)
     r_dir.mkdir(parents=True, exist_ok=True)
 
     # 1. Load validated ModelBundle and immutable official test set (3,080 samples)
-    bundle = load_and_validate_bundle(m_dir, verify_checksum=False)
+    bundle = load_and_validate_bundle(m_dir, verify_checksum=True)
     test_df = load_official_test(raw_dir)
     model = bundle.model
     cfg = bundle.config
 
-    threshold = float(cfg.get("threshold", 0.45))
-    high_risk_trigger = float(cfg.get("high_risk_trigger", 0.20))
-    min_margin = cfg.get("min_margin")
-    max_entropy = cfg.get("max_entropy")
+    policy_cfg = bundle.policy_config
+    auto_cfg = policy_cfg.get("auto_route", {})
+    critical_cfg = policy_cfg.get("critical_risk", {})
+    threshold = float(auto_cfg.get("min_queue_probability", policy_cfg.get("threshold", cfg.get("threshold", 0.45))))
+    high_risk_trigger = float(critical_cfg.get("minimum_probability", policy_cfg.get("high_risk_trigger", cfg.get("high_risk_trigger", 0.20))))
+    min_margin = auto_cfg.get("min_queue_margin", policy_cfg.get("min_margin", cfg.get("min_margin")))
+    max_entropy = policy_cfg.get("max_entropy", cfg.get("max_entropy"))
 
-    taxonomy = TaxonomyResolver()
+    taxonomy = TaxonomyResolver(bundle.taxonomy)
     policy = RoutingPolicy(
         threshold=threshold,
         high_risk_trigger=high_risk_trigger,
@@ -61,10 +62,16 @@ def evaluate_test_benchmark(
     )
     risk_assessor = RiskAssessor(
         classes=model.classes_,
-        high_risk_intents=DEFAULT_HIGH_RISK_INTENTS,
+        taxonomy=taxonomy,
         high_risk_trigger=high_risk_trigger,
     )
-    ood_guard = OODGuard()
+    scope_cfg = policy_cfg.get("scope", {})
+    ood_guard = OODGuard(
+        min_chars=int(scope_cfg.get("min_chars", 4)),
+        min_tokens=int(scope_cfg.get("min_tokens", 2)),
+        lexical_similarity_threshold=float(scope_cfg.get("lexical_novelty_threshold", 0.08)),
+        low_confidence_ood_threshold=float(scope_cfg.get("low_confidence_threshold", 0.22)),
+    )
 
     routing_service = RoutingService(
         model=model,
@@ -121,7 +128,7 @@ def evaluate_test_benchmark(
         decisions=decisions,
         predictions=pred,
         targets=targets,
-        high_risk_intents=DEFAULT_HIGH_RISK_INTENTS,
+        high_risk_intents=taxonomy.get_critical_intents(),
     )
 
     # 8. Layer 6: Confusion Pairs Analysis
@@ -179,7 +186,7 @@ def evaluate_test_benchmark(
     )
     (r_dir / "high_risk_metrics.json").write_text(
         json.dumps({
-            "high_risk_intents": sorted(list(DEFAULT_HIGH_RISK_INTENTS)),
+            "critical_intents": sorted(list(taxonomy.get_critical_intents())),
             "high_risk_trigger": high_risk_trigger,
             "true_high_risk_count": op_metrics.get("high_risk_true_samples", 0),
             "correctly_escalated": op_metrics.get("high_risk_correctly_escalated", 0),

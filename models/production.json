@@ -1,0 +1,5 @@
+{
+  "release": "releases/banking-router-v4",
+  "model_version": "banking77-tfidf-char-lr-v4",
+  "policy_version": "queue-policy-v4"
+}

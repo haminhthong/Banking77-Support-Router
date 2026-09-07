@@ -19,8 +19,8 @@ def load_training_splits(
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Split dataset into 4 distinct roles:
     - Train (70%): Feature representation & classifier fitting.
-    - Calibration (15%): Post-hoc probability calibration (Platt Scaling).
-    - Threshold Validation (15%): Joint optimization of reject threshold & risk trigger.
+    - Calibration (15%): Fit a temperature candidate only.
+    - Threshold Validation (15%): Select raw vs temperature and optimize queue/risk policy.
     - Test: Untouched test benchmark (3,080 samples).
 
     Benchmarks:

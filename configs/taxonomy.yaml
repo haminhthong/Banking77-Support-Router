@@ -84,6 +84,7 @@ intents:
     domain: atm_cash
     queue: fraud_security_queue
     priority: critical
+    risk_tier: critical
     is_high_risk: true
   cash_withdrawal_charge:
     domain: atm_cash
@@ -93,6 +94,7 @@ intents:
     domain: atm_cash
     queue: fraud_security_queue
     priority: critical
+    risk_tier: critical
     is_high_risk: true
   declined_cash_withdrawal:
     domain: atm_cash
@@ -106,6 +108,7 @@ intents:
     domain: atm_cash
     queue: payment_investigation_queue
     priority: critical
+    risk_tier: critical
   wrong_exchange_rate_for_cash_withdrawal:
     domain: atm_cash
     queue: fee_inquiry_queue
@@ -120,16 +123,19 @@ intents:
     domain: account_security
     queue: fraud_security_queue
     priority: critical
+    risk_tier: critical
     is_high_risk: true
   lost_or_stolen_card:
     domain: account_security
     queue: fraud_security_queue
     priority: critical
+    risk_tier: critical
     is_high_risk: true
   lost_or_stolen_phone:
     domain: account_security
     queue: fraud_security_queue
     priority: critical
+    risk_tier: critical
     is_high_risk: true
   passcode_forgotten:
     domain: account_security
@@ -177,6 +183,7 @@ intents:
     domain: transfers_payments
     queue: fraud_security_queue
     priority: critical
+    risk_tier: critical
   failed_transfer:
     domain: transfers_payments
     queue: transfer_investigation_queue
@@ -261,6 +268,7 @@ intents:
     domain: transactions_refunds
     queue: fraud_security_queue
     priority: critical
+    risk_tier: critical
   card_payment_wrong_exchange_rate:
     domain: transactions_refunds
     queue: fee_inquiry_queue

@@ -13,7 +13,7 @@ import joblib
 import numpy as np
 import sklearn
 
-from ..data.contracts import BANKING77_77_CLASSES, DEFAULT_HIGH_RISK_INTENTS, INTENT_TO_DOMAIN
+from ..data.contracts import BANKING77_77_CLASSES
 from ..data.normalization import compute_file_sha256
 
 
@@ -56,8 +56,8 @@ def save_bundle(
     test_dataset_sha256: str,
     split_sizes: dict[str, int],
     pipeline_config: dict[str, Any],
-    model_version: str = "banking77-support-triage-v3",
-    policy_version: str = "risk-aware-triage-v3",
+    model_version: str = "banking77-tfidf-char-lr-v4",
+    policy_version: str = "queue-policy-v4",
 ) -> ModelBundle:
     """Save full production ModelBundle and emit verified manifest with cryptographic hashes."""
     p_dir = Path(target_dir)
@@ -79,13 +79,32 @@ def save_bundle(
         "joblib": joblib.__version__,
     }
 
-    # 3. Model Manifest
+    # Write canonical JSON artifacts first.  Legacy filenames are retained as
+    # read-only compatibility aliases for existing local deployments.
+    config_text = json.dumps(config_payload, indent=2, ensure_ascii=False)
+    taxonomy_text = json.dumps(taxonomy_payload, indent=2, ensure_ascii=False)
+    policy_text = json.dumps(policy_payload, indent=2, ensure_ascii=False)
+    (p_dir / "model_config.json").write_text(config_text, encoding="utf-8")
+    (p_dir / "config.json").write_text(config_text, encoding="utf-8")
+    (p_dir / "taxonomy.json").write_text(taxonomy_text, encoding="utf-8")
+    (p_dir / "routing_policy.json").write_text(policy_text, encoding="utf-8")
+    (p_dir / "policy.json").write_text(policy_text, encoding="utf-8")
+
+    # 3. Model Manifest.  Policy and taxonomy are executable configuration, so
+    # they are protected by the same release integrity contract as the model.
+    artifact_hashes = {
+        "model": model_sha256,
+        "model_config": compute_file_sha256(p_dir / "model_config.json"),
+        "taxonomy": compute_file_sha256(p_dir / "taxonomy.json"),
+        "routing_policy": compute_file_sha256(p_dir / "routing_policy.json"),
+    }
     manifest_payload = {
-        "schema_version": 3,
+        "schema_version": 4,
         "model_version": model_version,
         "policy_version": policy_version,
         "git_commit": get_git_commit(),
         "artifact_sha256": model_sha256,
+        "artifact_hashes": artifact_hashes,
         "class_labels_sha256": labels_sha256,
         "dataset_checksums": {
             "train_csv_sha256": train_dataset_sha256,
@@ -94,23 +113,13 @@ def save_bundle(
         "split_sizes": split_sizes,
         "pipeline_config": pipeline_config,
         "class_labels_count": len(classes),
-        "high_risk_intents": sorted(list(DEFAULT_HIGH_RISK_INTENTS)),
+        "normalization_version": "semantic-pii-v1",
         "runtime": runtime_info,
     }
 
-    # Write JSON files
-    (p_dir / "config.json").write_text(
-        json.dumps(config_payload, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
-    (p_dir / "model_manifest.json").write_text(
-        json.dumps(manifest_payload, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
-    (p_dir / "taxonomy.json").write_text(
-        json.dumps(taxonomy_payload, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
-    (p_dir / "policy.json").write_text(
-        json.dumps(policy_payload, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
+    manifest_text = json.dumps(manifest_payload, indent=2, ensure_ascii=False)
+    (p_dir / "manifest.json").write_text(manifest_text, encoding="utf-8")
+    (p_dir / "model_manifest.json").write_text(manifest_text, encoding="utf-8")
 
     return ModelBundle(
         model=calibrated_model,
@@ -136,8 +145,12 @@ def load_and_validate_bundle(
     """
     p_dir = Path(models_dir)
     joblib_path = p_dir / "router.joblib"
-    manifest_path = p_dir / "model_manifest.json"
-    config_path = p_dir / "config.json"
+    manifest_path = p_dir / "manifest.json"
+    if not manifest_path.exists():
+        manifest_path = p_dir / "model_manifest.json"
+    config_path = p_dir / "model_config.json"
+    if not config_path.exists():
+        config_path = p_dir / "config.json"
 
     if not joblib_path.exists():
         raise FileNotFoundError(f"Missing model artifact: {joblib_path}")
@@ -156,7 +169,9 @@ def load_and_validate_bundle(
         else {}
     )
 
-    policy_path = p_dir / "policy.json"
+    policy_path = p_dir / "routing_policy.json"
+    if not policy_path.exists():
+        policy_path = p_dir / "policy.json"
     policy_config = (
         json.loads(policy_path.read_text(encoding="utf-8"))
         if policy_path.exists()
@@ -164,13 +179,35 @@ def load_and_validate_bundle(
     )
 
     # 3. Checksum verification
-    if verify_checksum and "artifact_sha256" in manifest:
-        current_sha256 = compute_file_sha256(joblib_path)
-        expected_sha256 = manifest["artifact_sha256"]
-        if current_sha256 != expected_sha256:
-            raise ValueError(
-                f"Model artifact integrity check failed! Expected SHA256 {expected_sha256}, got {current_sha256}"
-            )
+    if verify_checksum:
+        expected_model_sha = manifest.get("artifact_hashes", {}).get(
+            "model", manifest.get("artifact_sha256")
+        )
+        if expected_model_sha:
+            current_sha256 = compute_file_sha256(joblib_path)
+            if current_sha256 != expected_model_sha:
+                raise ValueError(
+                    f"Model artifact integrity check failed! Expected SHA256 {expected_model_sha}, got {current_sha256}"
+                )
+
+        # New manifests must lock every executable JSON artifact.  Older
+        # bundles remain loadable for offline migration, but production callers
+        # should regenerate them before promotion.
+        for artifact_name, expected_sha in manifest.get("artifact_hashes", {}).items():
+            if artifact_name == "model":
+                continue
+            artifact_file = {
+                "model_config": config_path,
+                "taxonomy": taxonomy_path,
+                "routing_policy": policy_path,
+            }.get(artifact_name)
+            if artifact_file is None or not artifact_file.exists():
+                raise FileNotFoundError(f"Missing integrity-protected artifact: {artifact_name}")
+            current_sha = compute_file_sha256(artifact_file)
+            if current_sha != expected_sha:
+                raise ValueError(
+                    f"{artifact_name} integrity check failed! Expected SHA256 {expected_sha}, got {current_sha}"
+                )
 
     # 4. Load weights & verify 77 classes
     model = joblib.load(joblib_path)
@@ -183,6 +220,11 @@ def load_and_validate_bundle(
     if set(classes) != set(BANKING77_77_CLASSES):
         missing = set(BANKING77_77_CLASSES) - set(classes)
         raise ValueError(f"Model missing required banking classes: {missing}")
+
+    if taxonomy:
+        taxonomy_intents = set(taxonomy.get("intents", {}))
+        if taxonomy_intents and taxonomy_intents != set(BANKING77_77_CLASSES):
+            raise ValueError("Taxonomy intent set does not match Banking77's 77 classes")
 
     return ModelBundle(
         model=model,

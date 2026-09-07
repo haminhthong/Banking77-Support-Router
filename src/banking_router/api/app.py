@@ -15,12 +15,13 @@ from .schemas import (
     FeedbackRequest,
     IntentAlternativeResponse,
     PredictionResponse,
+    QueuePredictionResponse,
     RiskResponse,
     RouteRequest,
     RouteResponse,
+    ScopeResponse,
 )
-from ..config import MODELS_DIR, REPORTS_DIR, get_taxonomy_config
-from ..data.contracts import DEFAULT_HIGH_RISK_INTENTS
+from ..config import MODELS_DIR, REPORTS_DIR, resolve_models_dir
 from ..modeling.artifact import ModelBundle, load_and_validate_bundle
 from ..routing.ood import OODGuard
 from ..routing.policy import RoutingPolicy
@@ -29,6 +30,7 @@ from ..routing.service import RoutingService
 from ..routing.taxonomy import TaxonomyResolver
 from ..telemetry.events import record_human_feedback, record_routing_event
 from ..telemetry.privacy import redact_pii
+from ..storage.repositories import TicketRepository
 from ..utils import LOGGER
 
 app = FastAPI(
@@ -39,6 +41,7 @@ app = FastAPI(
 
 _service: RoutingService | None = None
 _bundle: ModelBundle | None = None
+_ticket_repository = TicketRepository(REPORTS_DIR / "tickets.sqlite3")
 
 
 def get_routing_service() -> RoutingService:
@@ -46,7 +49,7 @@ def get_routing_service() -> RoutingService:
     global _service, _bundle
     if _service is None:
         try:
-            _bundle = load_and_validate_bundle(MODELS_DIR, verify_checksum=False)
+            _bundle = load_and_validate_bundle(resolve_models_dir(MODELS_DIR), verify_checksum=True)
         except Exception as exc:
             raise HTTPException(
                 status_code=503,
@@ -54,20 +57,31 @@ def get_routing_service() -> RoutingService:
             ) from exc
 
         cfg = _bundle.config
+        policy_cfg = _bundle.policy_config
         taxonomy = TaxonomyResolver(_bundle.taxonomy)
+        auto_cfg = policy_cfg.get("auto_route", {})
+        critical_cfg = policy_cfg.get("critical_risk", {})
+        scope_cfg = policy_cfg.get("scope", {})
         policy = RoutingPolicy(
-            threshold=float(cfg.get("threshold", 0.45)),
-            high_risk_trigger=float(cfg.get("high_risk_trigger", 0.20)),
-            min_margin=cfg.get("min_margin"),
-            max_entropy=cfg.get("max_entropy"),
+            threshold=float(auto_cfg.get("min_queue_probability", policy_cfg.get("threshold", cfg.get("threshold", 0.45)))),
+            queue_threshold=float(auto_cfg.get("min_queue_probability", policy_cfg.get("threshold", cfg.get("threshold", 0.45)))),
+            queue_margin=float(auto_cfg.get("min_queue_margin", policy_cfg.get("min_margin", cfg.get("min_margin", 0.02)))),
+            min_margin=policy_cfg.get("min_margin", cfg.get("min_margin")),
+            max_entropy=policy_cfg.get("max_entropy", cfg.get("max_entropy")),
+            high_risk_trigger=float(critical_cfg.get("minimum_probability", policy_cfg.get("high_risk_trigger", cfg.get("high_risk_trigger", 0.20)))),
             taxonomy_resolver=taxonomy,
         )
         risk_assessor = RiskAssessor(
             classes=_bundle.model.classes_,
-            high_risk_intents=DEFAULT_HIGH_RISK_INTENTS,
-            high_risk_trigger=float(cfg.get("high_risk_trigger", 0.20)),
+            taxonomy=taxonomy,
+            high_risk_trigger=float(critical_cfg.get("minimum_probability", policy_cfg.get("high_risk_trigger", cfg.get("high_risk_trigger", 0.20)))),
         )
-        ood_guard = OODGuard()
+        ood_guard = OODGuard(
+            min_chars=int(scope_cfg.get("min_chars", 4)),
+            min_tokens=int(scope_cfg.get("min_tokens", 2)),
+            lexical_similarity_threshold=float(scope_cfg.get("lexical_novelty_threshold", 0.08)),
+            low_confidence_ood_threshold=float(scope_cfg.get("low_confidence_threshold", 0.22)),
+        )
         _service = RoutingService(
             model=_bundle.model,
             policy=policy,
@@ -75,8 +89,9 @@ def get_routing_service() -> RoutingService:
             ood_guard=ood_guard,
             taxonomy=taxonomy,
             metadata={
-                "model_version": cfg.get("version", "v3"),
-                "policy_version": cfg.get("policy_version", "v3"),
+                "model_version": _bundle.manifest.get("model_version", cfg.get("version", "unknown")),
+                "policy_version": _bundle.manifest.get("policy_version", policy_cfg.get("policy_version", "unknown")),
+                "normalization_version": _bundle.manifest.get("normalization_version", "legacy"),
             },
         )
     return _service
@@ -93,14 +108,14 @@ def readiness() -> dict[str, Any]:
     """Validate model bundle readiness, class count, and taxonomy integrity."""
     try:
         service = get_routing_service()
-        bundle = _bundle or load_and_validate_bundle(MODELS_DIR, verify_checksum=False)
+        bundle = _bundle or load_and_validate_bundle(resolve_models_dir(MODELS_DIR), verify_checksum=True)
         return {
             "status": "ready",
             "model_ready": True,
             "model_version": bundle.config.get("version", "unknown"),
             "policy_version": bundle.config.get("policy_version", "unknown"),
             "class_count": len(bundle.model.classes_),
-            "high_risk_classes_count": len(bundle.manifest.get("high_risk_intents", [])),
+            "high_risk_classes_count": len(TaxonomyResolver(bundle.taxonomy).get_critical_intents()),
         }
     except Exception as exc:
         raise HTTPException(
@@ -147,6 +162,7 @@ def route_ticket(req: RouteRequest) -> RouteResponse:
         result=res,
         latency_ms=latency_ms,
     )
+    _ticket_repository.save_routing_result(req.text, res)
 
     LOGGER.info(
         "Triage [id=%s]: text='%s' | action=%s | queue=%s | conf=%.4f | high_risk=%s | ood=%s",
@@ -172,11 +188,21 @@ def route_ticket(req: RouteRequest) -> RouteResponse:
             ],
         ),
         risk=RiskResponse(
+            tier="critical" if res.risk.high_risk_detected else "normal",
             high_risk_detected=res.risk.high_risk_detected,
             high_risk_intent=res.risk.high_risk_intent,
             high_risk_score=res.risk.high_risk_score,
+            critical_probability=res.risk.critical_probability,
             ood_detected=res.risk.ood_detected,
         ),
+        scope=ScopeResponse(
+            supported=not res.risk.ood_detected,
+            signals=list(res.risk.reason_codes) if res.risk.ood_detected else [],
+        ),
+        versions={
+            "model": str(res.metadata.get("model_version", "unknown")),
+            "policy": str(res.metadata.get("policy_version", "unknown")),
+        },
         decision=DecisionResponse(
             action=res.decision.action,
             queue=res.decision.queue_id,
@@ -185,6 +211,24 @@ def route_ticket(req: RouteRequest) -> RouteResponse:
             reason_codes=res.decision.reason_codes,
         ),
         metadata=res.metadata,
+        intent_prediction=PredictionResponse(
+            intent=res.prediction.intent,
+            domain=res.prediction.domain,
+            confidence=res.prediction.confidence,
+            margin=res.prediction.margin,
+            entropy=res.prediction.entropy,
+            alternatives=[IntentAlternativeResponse(**alt) for alt in res.prediction.alternatives],
+        ),
+        queue_prediction=(
+            QueuePredictionResponse(
+                queue=res.queue_prediction.queue,
+                confidence=res.queue_prediction.confidence,
+                margin=res.queue_prediction.margin,
+                probabilities=res.queue_prediction.probabilities,
+            )
+            if res.queue_prediction is not None
+            else None
+        ),
         # Legacy compatibility
         decision_legacy=res.decision.decision,
         intent=res.decision.intent,
@@ -236,16 +280,51 @@ def route_batch(batch: BatchRouteRequest) -> dict[str, Any]:
 def submit_feedback(fb: FeedbackRequest) -> dict[str, Any]:
     """Submit reviewer correction for quality tracking and continuous improvement loop."""
     service = get_routing_service()
+    existing_ticket = _ticket_repository.get_ticket(fb.request_id)
+    if existing_ticket is not None:
+        review = _ticket_repository.add_review(
+            request_id=fb.request_id,
+            reviewer_id=fb.reviewer_id,
+            final_intent=fb.reviewed_intent,
+            final_queue=fb.reviewed_queue,
+            resolution=fb.resolution,
+            notes=fb.notes,
+        )
+        return {"status": "recorded", "feedback": review}
+
+    # Legacy compatibility for clients that sent feedback before ticket
+    # persistence existed.  New integrations should use the review endpoint.
     record = record_human_feedback(
         feedback_file=REPORTS_DIR / "feedback_events.jsonl",
         request_id=fb.request_id,
         model_version=service.metadata.get("model_version", "v3"),
         predicted_intent="",  # Filled or tracked via request_id lookup
         reviewed_intent=fb.reviewed_intent,
+        reviewed_queue=fb.reviewed_queue,
+        resolution=fb.resolution,
         reviewer_id=fb.reviewer_id,
         notes=fb.notes,
     )
     return {"status": "recorded", "feedback": record}
+
+
+@app.post("/v1/tickets/{request_id}/review", summary="Review a routed ticket")
+def review_ticket(request_id: str, fb: FeedbackRequest) -> dict[str, Any]:
+    """Persist a human resolution against the original prediction by request_id."""
+    if fb.request_id != request_id:
+        raise HTTPException(status_code=400, detail="request_id in path and payload must match")
+    try:
+        review = _ticket_repository.add_review(
+            request_id=request_id,
+            reviewer_id=fb.reviewer_id,
+            final_intent=fb.reviewed_intent,
+            final_queue=fb.reviewed_queue,
+            resolution=fb.resolution,
+            notes=fb.notes,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"Unknown ticket: {request_id}") from exc
+    return {"status": "recorded", "review": review}
 
 
 # ─── Legacy API Compatibility Endpoints (/predict and /predict/batch) ─────────

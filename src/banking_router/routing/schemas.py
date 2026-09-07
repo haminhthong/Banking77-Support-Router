@@ -29,6 +29,15 @@ class IntentPrediction:
 
 
 @dataclass(frozen=True)
+class QueuePrediction:
+    """Business queue prediction projected from all intent probabilities."""
+    queue: str
+    confidence: float
+    margin: float
+    probabilities: dict[str, float] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
 class RiskAssessment:
     """Security risk and query quality assessment.
 
@@ -40,6 +49,7 @@ class RiskAssessment:
     high_risk_score: float
     ood_detected: bool
     reason_codes: list[str] = field(default_factory=list)
+    critical_probability: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -96,4 +106,5 @@ class RoutingResult:
     prediction: IntentPrediction
     risk: RiskAssessment
     decision: RoutingDecision
+    queue_prediction: QueuePrediction | None = None
     metadata: dict[str, Any] = field(default_factory=dict)

@@ -9,9 +9,11 @@ import numpy as np
 
 from .ood import OODGuard
 from .policy import RoutingPolicy
+from .queue_projector import QueueProjector
 from .risk import RiskAssessor
 from .schemas import IntentPrediction, RiskAssessment, RoutingDecision, RoutingResult
 from .taxonomy import TaxonomyResolver
+from ..data.normalization import normalize_pii_semantically
 from ..telemetry.privacy import redact_pii
 
 
@@ -33,6 +35,7 @@ class RoutingService:
         self.ood_guard = ood_guard or OODGuard()
         self.taxonomy = taxonomy or TaxonomyResolver()
         self.metadata = metadata or {}
+        self.queue_projector = QueueProjector(self.model.classes_, self.taxonomy)
 
         # Extract vocabulary from model (unwrapping CalibratedClassifierCV / FrozenEstimator)
         curr = model
@@ -69,8 +72,10 @@ class RoutingService:
         req_id = request_id or f"req_{uuid.uuid4().hex[:12]}"
         classes = self.model.classes_
 
-        # 1. Model inference: compute full 77 probability vector
-        proba = self.model.predict_proba([text])[0]
+        # 1. Normalize identifiers before inference using the same contract as
+        # offline training.  The raw text is only used for request-local audit.
+        model_text = normalize_pii_semantically(text)
+        proba = self.model.predict_proba([model_text])[0]
         ranked_indices = proba.argsort()[::-1]
 
         top_intent = str(classes[ranked_indices[0]])
@@ -83,9 +88,11 @@ class RoutingService:
         entropy = self._calculate_entropy(proba)
         top_domain = self.taxonomy.get_domain(top_intent)
 
+        queue_prediction = self.queue_projector.project(proba)
+
         # 2. OOD / Out-of-Scope Detection
         ood_detected, ood_reasons = self.ood_guard.detect(
-            text=text,
+            text=model_text,
             confidence=raw_confidence,
             margin=raw_margin,
         )
@@ -120,13 +127,14 @@ class RoutingService:
         )
 
         # 6. Evaluate Operational Routing Policy
-        decision = self.policy.evaluate(prediction, risk)
+        decision = self.policy.evaluate(prediction, risk, queue_prediction)
 
         return RoutingResult(
             request_id=req_id,
             prediction=prediction,
             risk=risk,
             decision=decision,
+            queue_prediction=queue_prediction,
             metadata=self.metadata,
         )
 
@@ -140,7 +148,8 @@ class RoutingService:
             return []
 
         classes = self.model.classes_
-        proba_matrix = self.model.predict_proba(texts)
+        normalized_texts = [normalize_pii_semantically(text) for text in texts]
+        proba_matrix = self.model.predict_proba(normalized_texts)
         results: list[RoutingResult] = []
 
         for i, text in enumerate(texts):
@@ -156,9 +165,10 @@ class RoutingService:
             )
             entropy = self._calculate_entropy(proba)
             top_domain = self.taxonomy.get_domain(top_intent)
+            queue_prediction = self.queue_projector.project(proba)
 
             ood_detected, ood_reasons = self.ood_guard.detect(
-                text=text,
+                text=normalize_pii_semantically(text),
                 confidence=raw_conf,
                 margin=raw_margin,
             )
@@ -189,7 +199,7 @@ class RoutingService:
                 alternatives=alternatives,
             )
 
-            decision = self.policy.evaluate(prediction, risk)
+            decision = self.policy.evaluate(prediction, risk, queue_prediction)
 
             results.append(
                 RoutingResult(
@@ -197,6 +207,7 @@ class RoutingService:
                     prediction=prediction,
                     risk=risk,
                     decision=decision,
+                    queue_prediction=queue_prediction,
                     metadata=self.metadata,
                 )
             )

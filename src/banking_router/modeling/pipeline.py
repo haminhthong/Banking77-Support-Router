@@ -9,6 +9,7 @@ from sklearn.pipeline import FeatureUnion, Pipeline
 
 
 def build_pipeline(
+    model_config: dict[str, Any] | None = None,
     word_ngram_range: tuple[int, int] = (1, 2),
     char_ngram_range: tuple[int, int] | None = (3, 5),
     use_char_features: bool = True,
@@ -20,29 +21,37 @@ def build_pipeline(
     Character n-grams ('char_wb') provide resilience against banking typos,
     abbreviations, and slight phrasing variations while maintaining sub-millisecond CPU latency.
     """
+    # New callers pass the resolved YAML payload.  Legacy keyword arguments
+    # remain supported for notebooks and older scripts.
+    cfg = model_config or {}
+    features_cfg = cfg.get("features", {})
+    word_cfg = dict(features_cfg.get("word", features_cfg.get("tfidf", {})))
+    char_cfg = dict(features_cfg.get("char", {}))
+    classifier_cfg = dict(cfg.get("classifier", {}).get("params", cfg.get("classifier", {})))
+
     word_vec_params = {
-        "ngram_range": word_ngram_range,
-        "min_df": 2,
-        "max_df": 0.98,
-        "sublinear_tf": True,
-        "max_features": 40000,
+        "ngram_range": tuple(word_cfg.get("ngram_range", word_ngram_range)),
+        "min_df": word_cfg.get("min_df", 2),
+        "max_df": word_cfg.get("max_df", 0.98),
+        "sublinear_tf": word_cfg.get("sublinear_tf", True),
+        "max_features": word_cfg.get("max_features", 50000),
     }
 
     lr_params = {
-        "C": c_param,
-        "max_iter": max_iter,
-        "class_weight": "balanced",
-        "solver": "lbfgs",
-        "n_jobs": None,
+        "C": classifier_cfg.get("C", c_param),
+        "max_iter": classifier_cfg.get("max_iter", max_iter),
+        "class_weight": classifier_cfg.get("class_weight", "balanced"),
+        "solver": classifier_cfg.get("solver", "lbfgs"),
+        "n_jobs": classifier_cfg.get("n_jobs", None),
     }
 
     if use_char_features and char_ngram_range is not None:
         char_vec_params = {
-            "analyzer": "char_wb",
-            "ngram_range": char_ngram_range,
-            "min_df": 3,
-            "max_features": 25000,
-            "sublinear_tf": True,
+            "analyzer": char_cfg.get("analyzer", "char_wb"),
+            "ngram_range": tuple(char_cfg.get("ngram_range", char_ngram_range)),
+            "min_df": char_cfg.get("min_df", 3),
+            "max_features": char_cfg.get("max_features", 25000),
+            "sublinear_tf": char_cfg.get("sublinear_tf", True),
         }
         features = FeatureUnion([
             ("word_tfidf", TfidfVectorizer(**word_vec_params)),
