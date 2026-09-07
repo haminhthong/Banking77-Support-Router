@@ -1,34 +1,52 @@
 {
-  "model_version": "banking77-tfidf-calibrated-lr-v2",
-  "policy_version": "risk-aware-policy-v2",
-  "git_commit": "1100e59",
+  "schema_version": 3,
+  "model_version": "banking77-support-triage-v3",
+  "policy_version": "risk-aware-triage-v3",
+  "git_commit": "11ec6d1",
+  "artifact_sha256": "feea242775841026accc409f4ad2c7ba0f0e496771b07be3392021e73958135a",
+  "class_labels_sha256": "cc9ba3a192079ea53c3f39c82004ca17fed9b788c656e03a60bc394d339fd20e",
   "dataset_checksums": {
     "train_csv_sha256": "b06e26ac675513959a63135f11b94ea7786ed02da65db93a5650d8838cbc664b",
     "test_csv_sha256": "d12d6e3bc4c3103966ae786dc435913c0c563dfa328f5a3646d0e62cfeeb474d"
   },
   "split_sizes": {
-    "train_rows": 6999,
-    "calibration_rows": 1500,
-    "threshold_validation_rows": 1500,
-    "test_rows": 3079
+    "train": 6991,
+    "calibration": 1498,
+    "threshold_validation": 1499,
+    "test": 3080
   },
-  "tfidf_config": {
-    "ngram_range": [
-      1,
-      2
-    ],
-    "min_df": 2,
-    "max_df": 0.98,
-    "sublinear_tf": true,
-    "max_features": 50000
+  "pipeline_config": {
+    "features": {
+      "word": {
+        "ngram_range": [
+          1,
+          2
+        ],
+        "min_df": 2,
+        "max_df": 0.98,
+        "sublinear_tf": true,
+        "max_features": 40000
+      },
+      "char": {
+        "analyzer": "char_wb",
+        "ngram_range": [
+          3,
+          5
+        ],
+        "min_df": 3,
+        "max_features": 25000,
+        "sublinear_tf": true
+      }
+    },
+    "classifier": {
+      "C": 4.0,
+      "max_iter": 1200,
+      "class_weight": "balanced",
+      "solver": "lbfgs",
+      "n_jobs": null
+    }
   },
-  "classifier_config": {
-    "max_iter": 1200,
-    "class_weight": "balanced",
-    "n_jobs": null,
-    "C": 4.0
-  },
-  "calibration_method": "sigmoid_platt_scaling",
+  "class_labels_count": 77,
   "high_risk_intents": [
     "card_swallowed",
     "cash_withdrawal_not_recognised",
@@ -36,8 +54,6 @@
     "lost_or_stolen_card",
     "lost_or_stolen_phone"
   ],
-  "high_risk_trigger": 0.2,
-  "class_labels_count": 77,
   "runtime": {
     "python": "3.13.14",
     "scikit_learn": "1.9.0",

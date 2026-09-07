@@ -1,20 +1,18 @@
 {
-  "schema_version": 2,
-  "version": "banking77-tfidf-calibrated-lr-v2",
-  "policy_version": "risk-aware-policy-v2",
+  "schema_version": 3,
+  "version": "banking77-support-triage-v3",
+  "policy_version": "risk-aware-triage-v3",
   "seed": 42,
-  "threshold": 0.45,
-  "minimum_coverage": 0.8,
-  "high_risk_trigger": 0.2,
+  "benchmark": "strict_decontaminated",
+  "threshold": 0.46,
+  "high_risk_trigger": 0.36,
+  "min_margin": 0.02,
+  "max_entropy": 3.8,
   "class_count": 77,
-  "split_contract": {
-    "train": "fit TF-IDF và classifier (70%)",
-    "calibration": "fit Platt scaling (15%)",
-    "threshold_validation": "chọn reject threshold (15%)",
-    "test": "đánh giá cuối duy nhất"
-  },
-  "raw_validation_ece": 0.29575846357246116,
-  "calibrated_validation_ece": 0.21760288429966457,
+  "raw_validation_ece": 0.18765795986233363,
+  "calibrated_validation_ece": 0.2154905238828649,
+  "raw_validation_log_loss": 0.5567199570332522,
+  "calibrated_validation_log_loss": 0.5823436426971951,
   "domain_map": {
     "Refund_not_showing_up": "transactions_refunds",
     "activate_my_card": "card_services",
@@ -94,10 +92,13 @@
     "wrong_amount_of_cash_received": "atm_cash",
     "wrong_exchange_rate_for_cash_withdrawal": "atm_cash"
   },
-  "runtime": {
-    "python": "3.13.14",
-    "scikit_learn": "1.9.0",
-    "numpy": "2.4.6",
-    "joblib": "1.5.3"
+  "policy_optimization": {
+    "status": "FEASIBLE_OPTIMAL",
+    "selected_reject_threshold": 0.46,
+    "selected_high_risk_trigger": 0.36,
+    "val_auto_coverage": 0.7905,
+    "val_auto_error": 0.0447,
+    "val_high_risk_recall": 0.9733,
+    "feasible_candidate_count": 571
   }
 }

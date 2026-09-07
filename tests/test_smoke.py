@@ -6,13 +6,21 @@ from src.utils import calculate_ece, calculate_entropy, redact_pii
 
 
 def test_calculate_ece_perfect_calibration():
-    """Kiểm tra ECE = 0 khi xác suất khớp hoàn toàn với thực tế."""
-    confidences = np.array([0.9, 0.8, 0.7, 0.6])
+    """Kiểm tra ECE = 0 khi độ chính xác thực tế khớp hoàn toàn với độ tin cậy trung bình."""
+    # Khi dự đoán đúng 100% với confidence 1.0
+    confidences = np.array([1.0, 1.0, 1.0, 1.0])
     predictions = np.array(["a", "b", "c", "d"])
     targets = np.array(["a", "b", "c", "d"])
 
     ece = calculate_ece(confidences, predictions, targets, n_bins=5)
-    assert 0.0 <= ece <= 1.0
+    assert abs(ece) < 1e-6
+
+    # Khi accuracy trong bin khớp đúng với confidence (ví dụ 50% đúng với conf 0.5)
+    conf_half = np.array([0.5, 0.5])
+    pred_half = np.array(["a", "b"])
+    target_half = np.array(["a", "wrong"])
+    ece_half = calculate_ece(conf_half, pred_half, target_half, n_bins=1)
+    assert abs(ece_half) < 1e-6
 
 
 def test_calculate_entropy():

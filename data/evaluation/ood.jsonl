@@ -1,0 +1,50 @@
+{"text": "Hello, how are you today?", "category": "greeting", "is_ood": true}
+{"text": "Good morning assistant", "category": "greeting", "is_ood": true}
+{"text": "Hi there", "category": "greeting", "is_ood": true}
+{"text": "Hey can you help me with something?", "category": "greeting", "is_ood": true}
+{"text": "Tell me a funny joke about bankers", "category": "chit_chat", "is_ood": true}
+{"text": "What is the capital city of Australia?", "category": "general_knowledge", "is_ood": true}
+{"text": "Who won the World Cup in 2022?", "category": "general_knowledge", "is_ood": true}
+{"text": "What is the weather forecast for London this weekend?", "category": "general_knowledge", "is_ood": true}
+{"text": "Can you write a poem about autumn leaves?", "category": "creative", "is_ood": true}
+{"text": "Recommend me a good restaurant near Central Park", "category": "general_recommendation", "is_ood": true}
+{"text": "How do I apply for a 30-year fixed home mortgage loan?", "category": "unsupported_product_mortgage", "is_ood": true}
+{"text": "What are your current interest rates for residential real estate mortgages?", "category": "unsupported_product_mortgage", "is_ood": true}
+{"text": "Can I refinance my housing mortgage loan with your bank?", "category": "unsupported_product_mortgage", "is_ood": true}
+{"text": "How can I purchase Bitcoin and Ethereum through my account?", "category": "unsupported_product_crypto", "is_ood": true}
+{"text": "Do you support cryptocurrency wallet withdrawals to Binance?", "category": "unsupported_product_crypto", "is_ood": true}
+{"text": "Can I stake Solana on this banking platform?", "category": "unsupported_product_crypto", "is_ood": true}
+{"text": "I want to buy physical gold bullion bars and store them in your vault", "category": "unsupported_product_commodities", "is_ood": true}
+{"text": "How do I open a commercial business loan for my restaurant franchise?", "category": "unsupported_product_business_loan", "is_ood": true}
+{"text": "Do you offer auto loans for second hand used cars?", "category": "unsupported_product_auto_loan", "is_ood": true}
+{"text": "What are the terms for a student college tuition education loan?", "category": "unsupported_product_student_loan", "is_ood": true}
+{"text": "How do I trade NASDAQ stock options and equity derivatives?", "category": "unsupported_product_brokerage", "is_ood": true}
+{"text": "Can I transfer my 401k pension retirement account to your institution?", "category": "unsupported_product_pension", "is_ood": true}
+{"text": "I need life insurance and health insurance coverage quotes", "category": "unsupported_product_insurance", "is_ood": true}
+{"text": "How do I file my annual IRS federal income tax returns through the app?", "category": "unsupported_product_tax", "is_ood": true}
+{"text": "My home WiFi router stopped connecting to the internet", "category": "technical_support_irrelevant", "is_ood": true}
+{"text": "Windows 11 update gave me a blue screen of death on my laptop", "category": "technical_support_irrelevant", "is_ood": true}
+{"text": "My iPhone screen is cracked and touch doesn't work", "category": "technical_support_irrelevant", "is_ood": true}
+{"text": "How do I reset my Netflix subscription password?", "category": "external_account", "is_ood": true}
+{"text": "Cancel my Spotify premium subscription please", "category": "external_account", "is_ood": true}
+{"text": "asdfghjklqwerty", "category": "gibberish", "is_ood": true}
+{"text": "zzzzzzzzzzzzzz", "category": "gibberish", "is_ood": true}
+{"text": "1234567890", "category": "gibberish", "is_ood": true}
+{"text": "??????????", "category": "gibberish", "is_ood": true}
+{"text": "ok", "category": "too_short", "is_ood": true}
+{"text": "no", "category": "too_short", "is_ood": true}
+{"text": "yes", "category": "too_short", "is_ood": true}
+{"text": "thx", "category": "too_short", "is_ood": true}
+{"text": "I love the new design of your mobile application interface", "category": "general_feedback", "is_ood": true}
+{"text": "Where is the nearest branch building located in Tokyo Japan?", "category": "physical_branch", "is_ood": true}
+{"text": "Are you hiring senior software engineers in Vietnam?", "category": "careers", "is_ood": true}
+{"text": "Who is the chief executive officer of this bank?", "category": "corporate_info", "is_ood": true}
+{"text": "Can I transfer money to buy an NFT on OpenSea?", "category": "unsupported_product_crypto", "is_ood": true}
+{"text": "Help me calculate the compound interest on a savings bond over 20 years", "category": "financial_calculation", "is_ood": true}
+{"text": "What is your stance on climate change and green ESG bonds?", "category": "corporate_esg", "is_ood": true}
+{"text": "Can I bring my pet dog inside the bank branch?", "category": "branch_policy", "is_ood": true}
+{"text": "Please book an appointment with a financial advisor for estate planning", "category": "wealth_management", "is_ood": true}
+{"text": "How do I set up a trust fund for my children?", "category": "wealth_management", "is_ood": true}
+{"text": "Where do I find your company annual financial audit report?", "category": "investor_relations", "is_ood": true}
+{"text": "Can you speak Spanish or French with me?", "category": "language_support", "is_ood": true}
+{"text": "Testing 1 2 3 testing sound check", "category": "noise", "is_ood": true}

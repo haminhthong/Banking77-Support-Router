@@ -1,4 +1,8 @@
 {
+  "threshold": 0.46,
+  "high_risk_trigger": 0.36,
+  "min_margin": 0.02,
+  "max_entropy": 3.8,
   "high_risk_intents": [
     "card_swallowed",
     "cash_withdrawal_not_recognised",
@@ -6,9 +10,6 @@
     "lost_or_stolen_card",
     "lost_or_stolen_phone"
   ],
-  "high_risk_trigger": 0.36,
-  "true_high_risk_count": 200,
-  "correctly_escalated": 194,
-  "escalation_recall": 0.97,
-  "escalation_precision": 0.894
+  "target_selective_risk": 0.05,
+  "target_high_risk_recall": 0.95
 }

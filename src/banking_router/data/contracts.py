@@ -1,0 +1,198 @@
+"""Data contracts, 77-class taxonomy definition, and domain projection constants."""
+
+from __future__ import annotations
+
+from typing import Any
+
+# Standard 77 BANKING77 Intent Classes in lexicographical order
+BANKING77_77_CLASSES: list[str] = sorted(
+    [
+        "Refund_not_showing_up",
+        "activate_my_card",
+        "age_limit",
+        "apple_pay_or_google_pay",
+        "atm_support",
+        "automatic_top_up",
+        "balance_not_updated_after_bank_transfer",
+        "balance_not_updated_after_cheque_or_cash_deposit",
+        "beneficiary_not_allowed",
+        "cancel_transfer",
+        "card_about_to_expire",
+        "card_acceptance",
+        "card_arrival",
+        "card_delivery_estimate",
+        "card_linking",
+        "card_not_working",
+        "card_payment_fee_charged",
+        "card_payment_not_recognised",
+        "card_payment_wrong_exchange_rate",
+        "card_swallowed",
+        "cash_withdrawal_charge",
+        "cash_withdrawal_not_recognised",
+        "change_pin",
+        "compromised_card",
+        "contactless_not_working",
+        "country_support",
+        "declined_card_payment",
+        "declined_cash_withdrawal",
+        "declined_transfer",
+        "direct_debit_payment_not_recognised",
+        "disposable_card_limits",
+        "edit_personal_details",
+        "exchange_charge",
+        "exchange_rate",
+        "exchange_via_app",
+        "extra_charge_on_statement",
+        "failed_transfer",
+        "fiat_currency_support",
+        "get_disposable_virtual_card",
+        "get_physical_card",
+        "getting_spare_card",
+        "getting_virtual_card",
+        "lost_or_stolen_card",
+        "lost_or_stolen_phone",
+        "order_physical_card",
+        "passcode_forgotten",
+        "pending_card_payment",
+        "pending_cash_withdrawal",
+        "pending_top_up",
+        "pending_transfer",
+        "pin_blocked",
+        "receiving_money",
+        "request_refund",
+        "reverted_card_payment?",
+        "supported_cards_and_currencies",
+        "terminate_account",
+        "top_up_by_bank_transfer_charge",
+        "top_up_by_card_charge",
+        "top_up_by_cash_or_cheque",
+        "top_up_failed",
+        "top_up_limits",
+        "top_up_reverted",
+        "topping_up_by_card",
+        "transaction_charged_twice",
+        "transfer_fee_charged",
+        "transfer_into_account",
+        "transfer_not_received_by_recipient",
+        "transfer_timing",
+        "unable_to_verify_identity",
+        "verify_my_identity",
+        "verify_source_of_funds",
+        "verify_top_up",
+        "virtual_card_not_working",
+        "visa_or_mastercard",
+        "why_verify_identity",
+        "wrong_amount_of_cash_received",
+        "wrong_exchange_rate_for_cash_withdrawal",
+    ]
+)
+
+# Explicit 77-to-10 Domain Mapping
+INTENT_TO_DOMAIN: dict[str, str] = {
+    # 1. card_services (17 intents)
+    "activate_my_card": "card_services",
+    "card_about_to_expire": "card_services",
+    "card_acceptance": "card_services",
+    "card_arrival": "card_services",
+    "card_delivery_estimate": "card_services",
+    "card_linking": "card_services",
+    "card_not_working": "card_services",
+    "contactless_not_working": "card_services",
+    "disposable_card_limits": "card_services",
+    "get_disposable_virtual_card": "card_services",
+    "get_physical_card": "card_services",
+    "getting_spare_card": "card_services",
+    "getting_virtual_card": "card_services",
+    "order_physical_card": "card_services",
+    "supported_cards_and_currencies": "card_services",
+    "virtual_card_not_working": "card_services",
+    "visa_or_mastercard": "card_services",
+    # 2. atm_cash (9 intents)
+    "atm_support": "atm_cash",
+    "balance_not_updated_after_cheque_or_cash_deposit": "atm_cash",
+    "card_swallowed": "atm_cash",
+    "cash_withdrawal_charge": "atm_cash",
+    "cash_withdrawal_not_recognised": "atm_cash",
+    "declined_cash_withdrawal": "atm_cash",
+    "pending_cash_withdrawal": "atm_cash",
+    "wrong_amount_of_cash_received": "atm_cash",
+    "wrong_exchange_rate_for_cash_withdrawal": "atm_cash",
+    # 3. account_security (10 intents)
+    "change_pin": "account_security",
+    "compromised_card": "account_security",
+    "lost_or_stolen_card": "account_security",
+    "lost_or_stolen_phone": "account_security",
+    "passcode_forgotten": "account_security",
+    "pin_blocked": "account_security",
+    "unable_to_verify_identity": "account_security",
+    "verify_my_identity": "account_security",
+    "verify_source_of_funds": "account_security",
+    "why_verify_identity": "account_security",
+    # 4. transfers_payments (12 intents)
+    "balance_not_updated_after_bank_transfer": "transfers_payments",
+    "beneficiary_not_allowed": "transfers_payments",
+    "cancel_transfer": "transfers_payments",
+    "declined_transfer": "transfers_payments",
+    "direct_debit_payment_not_recognised": "transfers_payments",
+    "failed_transfer": "transfers_payments",
+    "pending_transfer": "transfers_payments",
+    "receiving_money": "transfers_payments",
+    "transfer_fee_charged": "transfers_payments",
+    "transfer_into_account": "transfers_payments",
+    "transfer_not_received_by_recipient": "transfers_payments",
+    "transfer_timing": "transfers_payments",
+    # 5. topup_recharge (10 intents)
+    "automatic_top_up": "topup_recharge",
+    "pending_top_up": "topup_recharge",
+    "top_up_by_bank_transfer_charge": "topup_recharge",
+    "top_up_by_card_charge": "topup_recharge",
+    "top_up_by_cash_or_cheque": "topup_recharge",
+    "top_up_failed": "topup_recharge",
+    "top_up_limits": "topup_recharge",
+    "top_up_reverted": "topup_recharge",
+    "topping_up_by_card": "topup_recharge",
+    "verify_top_up": "topup_recharge",
+    # 6. transactions_refunds (10 intents)
+    "Refund_not_showing_up": "transactions_refunds",
+    "card_payment_fee_charged": "transactions_refunds",
+    "card_payment_not_recognised": "transactions_refunds",
+    "card_payment_wrong_exchange_rate": "transactions_refunds",
+    "declined_card_payment": "transactions_refunds",
+    "extra_charge_on_statement": "transactions_refunds",
+    "pending_card_payment": "transactions_refunds",
+    "request_refund": "transactions_refunds",
+    "reverted_card_payment?": "transactions_refunds",
+    "transaction_charged_twice": "transactions_refunds",
+    # 7. fees_rates (4 intents)
+    "exchange_charge": "fees_rates",
+    "exchange_rate": "fees_rates",
+    "exchange_via_app": "fees_rates",
+    "fiat_currency_support": "fees_rates",
+    # 8. account_management (3 intents)
+    "age_limit": "account_management",
+    "edit_personal_details": "account_management",
+    "terminate_account": "account_management",
+    # 9. app_features (1 intent)
+    "apple_pay_or_google_pay": "app_features",
+    # 10. international_services (1 intent)
+    "country_support": "international_services",
+}
+
+DEFAULT_HIGH_RISK_INTENTS: frozenset[str] = frozenset(
+    {
+        "cash_withdrawal_not_recognised",
+        "card_swallowed",
+        "compromised_card",
+        "lost_or_stolen_card",
+        "lost_or_stolen_phone",
+    }
+)
+
+assert set(INTENT_TO_DOMAIN.keys()) == set(
+    BANKING77_77_CLASSES
+), "Taxonomy mapping does not match exact 77 classes!"
+
+
+def get_domain_for_intent(intent: str) -> str:
+    """Map fine-grained intent to higher-level business domain."""
+    return INTENT_TO_DOMAIN.get(intent.strip(), "general_banking")

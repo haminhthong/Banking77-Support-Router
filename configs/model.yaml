@@ -1,0 +1,25 @@
+# ML Classifier and Calibration Pipeline Configuration
+
+model_version: "banking77-tfidf-calibrated-lr-v3"
+seed: 42
+
+features:
+  tfidf:
+    ngram_range: [1, 2]
+    min_df: 2
+    max_df: 0.98
+    sublinear_tf: true
+    max_features: 50000
+
+classifier:
+  type: "logistic_regression"
+  params:
+    C: 4.0
+    max_iter: 1200
+    class_weight: "balanced"
+    solver: "lbfgs"
+    n_jobs: null
+
+calibration:
+  method: "sigmoid"  # Platt Scaling
+  cv: "prefit"

@@ -1,296 +1,467 @@
-# 🚀 Banking77 Support Triage Platform — Calibrated Intent Routing with Selective Automation & Risk-Aware Human Escalation
+# 🛡️ Risk-Aware Banking Support Triage System — Calibrated Intent Intelligence, Multi-Tiered Safety Gates & Operational Decision Routing
 
-Dịch vụ phân luồng ticket hỗ trợ khách hàng ngân hàng (77 ý định) kết hợp **TF-IDF Classification**, **Probability Calibration** (Platt Scaling), **Selective Prediction Gate** (Từ chối dự đoán khi mập mờ/rủi ro), **Exact 77-Intent Domain Taxonomy Projection**, **High-Risk Escalation Policy** và **FastAPI Serving** sẵn sàng cho môi trường vận hành thực tế.
+[![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.116+-009688.svg)](https://fastapi.tiangolo.com/)
+[![Scikit-Learn](https://img.shields.io/badge/scikit--learn-1.5%20%E2%86%92%201.9-F7931E.svg)](https://scikit-learn.org/)
+[![Tests](https://img.shields.io/badge/tests-32%20passed%20(100%25)-brightgreen.svg)]()
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
+
+Hệ thống phân luồng và ra quyết định hỗ trợ khách hàng ngân hàng tự động (**Risk-Aware Banking Support Triage System**). Kết hợp **TF-IDF + Char N-gram Feature Union**, **Platt Probability Calibration**, **Out-of-Distribution (OOD) Detection**, **Decoupled Security Risk Scanner**, **Operational Queue Routing**, và **FastAPI Serving** với vòng phản hồi chuyên viên (**Human-in-the-Loop Feedback Loop**).
 
 ---
 
-## 🎯 Bài Toán Nghiệp Vụ & Tư Duy AI Engineering
+## 🎯 1. Định Vị Dự Án & Bài Toán Nghiệp Vụ Thực Tế
 
-Trong dịch vụ tài chính - ngân hàng, việc phân loại sai nhãn (**False Routing**) của một yêu cầu hỗ trợ (ví dụ: chuyển nhầm một sự cố *thẻ bị xâm nhập/lừa đảo* sang hàng đợi *thắc mắc tỷ giá thông thường*) gây ra thiệt hại nghiêm trọng và chi phí xử lý cao hơn nhiều so với việc chuyển ticket cho nhân viên kiểm duyệt.
+Trong môi trường tài chính - ngân hàng, bài toán không đơn giản là *"phân loại văn bản vào 77 nhãn"*. Một mô hình ML với độ chính xác 87% vẫn có thể gây thảm họa nếu tự động phân luồng sai một sự cố thẻ bị xâm nhập gian lận (`compromised_card`) vào hàng đợi thắc mắc thường, hoặc cố ép một câu hỏi ngoài phạm vi (`"Làm sao vay mua nhà 30 năm?"`) vào một trong 77 nhãn thẻ.
 
-Hệ thống được thiết kế theo tư duy **Decision Support & Risk-Aware Triage**: không ép mô hình phải dự đoán 100% các ticket, mà tách rõ ranh giới giữa những ca tự động hóa an toàn, những ca cần chuyên viên an ninh ưu tiên xử lý khẩn cấp, và những ca mập mờ cần nhân viên hỗ trợ thông thường.
-
-### 📐 Canonical System Architecture
+Hệ thống được thiết kế theo tư duy **Operational Decision System** hoàn chỉnh:
 
 ```text
-                        OFFLINE ML PIPELINE
+Customer Support Ticket
+        │
+        ▼
+Request Validation & PII Privacy Shield
+        │
+        ▼
+Intent Understanding (Calibrated Probabilities)
+        │
+        ▼
+Uncertainty / Margin / Entropy Profiling
+        │
+        ▼
+Out-of-Distribution (OOD) Guard
+        │
+        ▼
+Security Risk Assessment (All Risk Classes Scanned)
+        │
+        ▼
+Operational Routing Policy Engine
+        │
+   ┌────┴───────────────────────────┬────────────────────────────────┐
+   ▼                                ▼                                ▼
+AUTO ROUTE                     HUMAN REVIEW                  PRIORITY REVIEW
+Normal high-confidence         Ambiguous queries             Fraud / stolen card /
+operations queue               or Out-of-Scope (OOD)         security incidents
+   │                                │                                │
+   └────────────────────────────────┼────────────────────────────────┘
+                                    ▼
+                 Operational Queues + Structured Telemetry
+                                    │
+                                    ▼
+                    Human Reviewer Feedback Loop
+```
 
-BANKING77
-Train Source (10,003) + Official Test (3,080)
-        ↓
-1. DATA QUALITY & CONTRACT AUDIT
-   ├── Schema validation
-   ├── Empty-text & whitespace normalization
-   ├── Conflicting-label audit (same text, different intents)
-   └── Pairwise disjoint audit across all splits
-        ↓
-2. DEVELOPMENT SPLIT (4 Distinct Roles)
-   ┌──────────────┬───────────────┬─────────────────────┐
-   │              │               │                     │
- Train (70%)   Calibration (15%) Threshold Val (15%)  Official Test (3,079)
- (6,999 rows)   (1,500 rows)     (1,500 rows)           │
-   │              │               │                     │
-TF-IDF +       Platt Scaling     Selective Reject       │
-Logistic Reg   (Sigmoid Calib)   Policy Selection       │
-   │              │               │                     │
-   └──────────────┴───────┬───────┘                     │
-                          ↓                             │
-                    Frozen Router                       │
-                          ↓                             │
-                     FINAL TEST ◄───────────────────────┘
-                          ↓
-        Versioned Artifacts & Canonical Reports
-        ├── models/router.joblib
-        ├── models/config.json & model_manifest.json
-        └── reports/validation_metrics.json & test_metrics.json
+ML model chỉ là một thành phần cảm biến (signal generator); toàn bộ giá trị nằm ở tầng **Safety Gates, Decision Policy và Queue Resolution**.
 
+---
 
-                        ONLINE ROUTING PIPELINE
+## 📐 2. Kiến Trúc Canonical System
 
-Customer Query
-      ↓
-Input Validation & PII Redaction Layer
-      ↓
-Text Feature Pipeline (TF-IDF unigram + bigram)
-      ↓
-77-Intent Classifier & Calibrated Probabilities
-      ↓
-Top-K Candidate Intents + Margin + Entropy
-      ↓
-Risk & Uncertainty Policy Gate
- ┌─────────────────────────────────────────────────────────────┐
- │ 1. High-Risk Check: Top-1 in High-Risk OR                   │
- │    any High-Risk in Top-K (prob >= high_risk_trigger)?      │
- ├─────────────────────────────────────────────────────────────┤
- │ 2. Uncertainty Check: Confidence < Threshold (0.45) OR      │
- │    Margin < min_margin OR Entropy > max_entropy?            │
- └──────────────────────────────┬──────────────────────────────┘
-                                │
-        ┌───────────────────────┼────────────────────────┐
-        ▼                       ▼                        ▼
-[Priority Escalation]       [Abstain]              [Auto Route]
-        │                       │                        │
-Priority Human Review     Human Review          Intent Queue / Auto
-(Fraud / Stolen Card)    (Low Confidence)        (High Confidence)
-        └───────────────────────┼────────────────────────┘
-                                ▼
-               PII-Safe Telemetry & Monitoring
+### A. Offline Machine Learning & Policy Pipeline
+
+```text
+BANKING77 RAW DATA (Train 10,003 rows + Official Test 3,080 rows)
+        │
+        ▼
+1. DATA QUALITY & INTEGRITY CONTRACT
+   ├── Schema validation (['text', 'category'] -> ['text', 'intent'])
+   ├── Whitespace & NFKC normalization
+   ├── Conflicting-label audit (BEFORE deduplication)
+   └── Deduplication (only after audit)
+        │
+        ▼
+2. DUAL BENCHMARK SPLIT STRATEGY
+   ├── [A] Official Published Split: Preserves published test benchmark (3,080 rows).
+   └── [B] Strict Decontaminated Split: Purges normalized test duplicates from train.
+        │
+        ▼
+3. 4-WAY DEVELOPMENT ROLE PARTITION
+   ┌────────────────────┬────────────────────┬────────────────────────┐
+   │                    │                    │                        │
+Train (70%)        Calibration (15%)    Threshold Val (15%)     Official Test (3,080)
+(6,999 rows)        (1,500 rows)         (1,500 rows)             (Untouched Benchmark)
+   │                    │                    │                        │
+Word + Char         Platt Scaling        Joint Grid Search        Immutable Evaluation
+TF-IDF Pipeline     (Sigmoid Calib)      ├── Reject Threshold     ├── Classification
+   │                    │                └── High-Risk Trigger    ├── Calibration
+   └────────────────────┴──────────┬─────────┘                    ├── Selective Risk
+                                   ▼                              ├── Operational Safety
+                         FROZEN MODEL BUNDLE                      └── OOD Benchmark
+                         ├── router.joblib
+                         ├── model_manifest.json (SHA-256 verified)
+                         ├── config.json
+                         ├── taxonomy.json
+                         └── policy.json
+```
+
+### B. Online Request Triage Pipeline
+
+```text
+                            CUSTOMER TICKET
+                                   │
+                                   ▼
+                         1. REQUEST VALIDATION
+                         Length & Encoding Checks
+                                   │
+                                   ▼
+                           2. PRIVACY LAYER
+                         PII Masking (Card/Phone/Email/Account)
+                                   │
+                                   ▼
+                           3. INTENT MODEL
+                    Word (1-2) + Char (3-5) TF-IDF + LR
+                                   │
+                                   ▼
+                         77 CALIBRATED SCORES
+                                   │
+             ┌─────────────────────┼─────────────────────┐
+             │                     │                     │
+             ▼                     ▼                     ▼
+          Top-1               Uncertainty             Security
+        Prediction              Signals             Risk Scanner
+     (Intent & Domain)     Confidence / Margin    ALWAYS scans ALL
+                              and Entropy           risk classes
+             │                     │                     │
+             └─────────────────────┼─────────────────────┘
+                                   ▼
+                        4. OOD / QUALITY GATE
+                     Dispersion + Content Keyword Footprint
+                                   │
+                                   ▼
+                        5. POLICY ENGINE
+                     Priority Precedence Order:
+                     
+                     1. SECURITY THREAT DETECTED?
+                        └─► YES: PRIORITY HUMAN REVIEW
+                     2. OUT-OF-DISTRIBUTION (OOD)?
+                        └─► YES: GENERAL HUMAN REVIEW
+                     3. UNCERTAINTY GATE TRIGGERED?
+                        └─► YES: GENERAL HUMAN REVIEW
+                     4. SAFE & CONFIDENT?
+                        └─► YES: SAFE AUTO-ROUTE
+                                   │
+                     ┌─────────────┼─────────────┐
+                     ▼             ▼             ▼
+              PRIORITY REVIEW HUMAN REVIEW   AUTO ROUTE
+                     │             │             │
+                     └─────────────┼─────────────┘
+                                   ▼
+                         6. QUEUE RESOLUTION
+                  Intent != Queue (Operational Queues)
+                                   │
+                                   ▼
+                         7. STRUCTURED TELEMETRY
+                     JSONL Event Log (PII-Safe)
+                                   │
+                                   ▼
+                         8. HUMAN FEEDBACK LOOP
+                     Reviewer Intent Corrections -> Retraining Pool
 ```
 
 ---
 
-## ✨ Các Điểm Sáng Kỹ Thuật (Engineering Highlights)
+## 🔬 3. Kết Quả Thực Nghiệm Toàn Diện (Canonical Benchmarks)
 
-1. **Protocol 4 Split Độc Lập — Tránh Tối Đa Leakage**:
-   - **Train (70%)**: Huấn luyện TF-IDF vectorizer và bộ phân loại Logistic Regression.
-   - **Calibration (15%)**: Hiệu chỉnh xác suất bằng Platt Scaling (Sigmoid Calibrator), hoàn toàn tách biệt khỏi tập train.
-   - **Threshold Validation (15%)**: Quét tìm ngưỡng từ chối tối ưu ($0.20 \rightarrow 0.95$) thỏa mãn ràng buộc nghiệp vụ $Coverage \ge 80\%$.
-   - **Official Test (3,079 mẫu)**: Giữ nguyên vẹn làm mốc benchmark cuối cùng, không tham gia vào bất kỳ bước tuning nào.
-   - Toàn bộ 6 cặp split đều được audit tự động độ trùng lặp văn bản (Pairwise Disjoint Audit).
+Các chỉ số được đo lường độc lập trên tập **Official Test Benchmark (3,080 mẫu nguyên vẹn)**:
 
-2. **Cơ Chế Phân Luồng Chọn Lọc (Selective Prediction & Abstain Semantics)**:
-   - Khi độ tin cậy dưới ngưỡng threshold ($0.45$), hệ thống chủ động **từ chối tự động hóa (Abstain)** với hợp đồng: `{"decision": "abstain", "abstained": true, "reason": "LOW_CONFIDENCE"}`.
-   - Việc từ chối 18.93% các ca khó giúp độ chính xác của các ca được tự động xử lý (**Accepted Accuracy**) tăng vọt từ **86.72% lên 93.99%**, giảm tỷ lệ lỗi tự động (**Selective Risk**) xuống chỉ còn **6.01%**.
-
-3. **High-Risk Escalation Policy (Ưu Tiên Rủi Ro Tuyệt Đối)**:
-   - Các ý định nhạy cảm liên quan tới an ninh/thất thoát tài sản (`compromised_card`, `lost_or_stolen_card`, `card_swallowed`, `lost_or_stolen_phone`, `cash_withdrawal_not_recognised`) luôn được ưu tiên:
-     - Nếu Top-1 là intent rủi ro: lập tức chuyển `priority_human_review` với lý do `HIGH_RISK_INTENT`, **không bao giờ** bị hạ cấp xuống review thường vì low confidence.
-     - Nếu intent rủi ro xuất hiện trong Top-K với xác suất $\ge 0.20$: kích hoạt cảnh báo sớm `HIGH_RISK_CANDIDATE`.
-   - Kết quả: Đạt **92.50% High-Risk Escalation Recall** và **86.45% Precision** trên tập Test độc lập.
-
-4. **Exact 77-Class Domain Taxonomy Projection**:
-   - Thay thế toàn bộ substring rules bằng từ điển taxonomy tường minh ánh xạ chính xác 77 ý định vào 10 miền nghiệp vụ (`card_services`, `transfers_payments`, `account_security`, `topup_recharge`, `transactions_refunds`, `atm_cash`, `fees_rates`, `account_management`, `app_features`, `international_services`).
-   - Khắc phục triệt để lỗi phân loại nhầm các nhãn `top_up_*`. CI test tự động kiểm tra tính đầy đủ: `set(INTENT_TO_DOMAIN.keys()) == set(BANKING77_77_CLASSES)`.
-   - Đạt độ chính xác ánh xạ cấp miền (**Domain Taxonomy Projection Accuracy**) là **93.73%**.
-
-5. **REST API Production-Ready & PII-Safe Telemetry**:
-   - **Vectorized Batch Inference**: Endpoint `/predict/batch` vector hóa toàn bộ danh sách truy vấn trong một lần gọi ma trận duy nhất, tăng tốc độ xử lý nhiều lần so với xử lý tuần tự.
-   - **Độ chính xác dấu phẩy động**: Sử dụng raw probabilities cho quyết định của policy; chỉ làm tròn số khi format JSON response.
-   - **PII Redaction**: Tự động che giấu số thẻ ngân hàng (13-19 số), email và số điện thoại trước khi ghi log sự kiện.
-
----
-
-## 📊 Kết Quả Thực Nghiệm Canonical (Single Source of Truth)
-
-Toàn bộ các chỉ số dưới đây được kết xuất tự động từ một lần chạy duy nhất trên tập Test chính thức độc lập (**3,079 mẫu**):
-
-| Tầng Đánh Giá (Evaluation Layer) | Chỉ Số (Metric) | Giá Trị Canonical | Diễn Giải Kỹ Thuật & Nghiệp Vụ |
-|---|---|---:|---|
-| **Intent Classifier** | **Test Accuracy** | **86.72%** | Tỷ lệ dự đoán chính xác trên toàn bộ 77 intent |
-| | **Test Macro-F1** | **86.66%** | F1 trung bình giữa 77 nhãn (tính đồng đều) |
-| | **Top-3 Accuracy** | **95.94%** | Tỷ lệ nhãn thực tế nằm trong 3 gợi ý hàng đầu |
-| **Taxonomy Projection** | **Domain Accuracy** | **93.73%** | Độ chính xác ánh xạ vào 10 miền nghiệp vụ (Coarse Routing) |
-| **Calibration** | **Calibrated Test ECE** | **0.2176** | Expected Calibration Error sau Platt Scaling |
-| | **Test Log-Loss** | **0.6674** | Độ mất mát hàm entropy chéo đa lớp |
-| | **Test Brier Score** | **0.2610** | Trung bình bình phương sai số xác suất |
-| **Selective Routing** | **Reject Threshold** | **0.4500** | Ngưỡng xác suất tối ưu (chọn trên Validation) |
-| | **Selective Coverage** | **81.07%** | Tỷ lệ ticket đủ điều kiện tự động xử lý (2,496 / 3,079) |
-| | **Selective Risk** | **6.01%** | Tỷ lệ lỗi trong số các ticket được tự động xử lý |
-| | **Accepted Accuracy** | **93.99%** | Độ chính xác thực tế của luồng tự động hóa |
-| **Risk-Coverage Curve** | **AURC** | **0.0283** | Diện tích dưới đường cong Risk-Coverage (càng nhỏ càng tốt) |
-| | **Coverage @ 5% Risk** | **77.04%** | Độ phủ tối đa khi chặn ngưỡng lỗi tự động $\le 5\%$ |
-| | **Coverage @ 3% Risk** | **67.55%** | Độ phủ tối đa khi chặn ngưỡng lỗi tự động $\le 3\%$ |
-| **High-Risk Safety** | **Escalation Recall** | **92.50%** | Tỷ lệ phát hiện và leo thang thành công các ca nhạy cảm |
-| | **Escalation Precision**| **86.45%** | Tỷ lệ ca được leo thang thực sự là rủi ro an ninh |
-
-> 📌 **Đánh giá về Calibration & ECE**: Platt Scaling giúp giảm đáng kể log-loss trên validation từ 0.8722 xuống 0.7125. Tuy nhiên ECE trên tập test vẫn còn ở mức 0.2176. Do đó trong hệ thống, xác suất được coi là *calibrated scores phục vụ routing policy* chứ chưa phải xác suất hoàn hảo tuyệt đối.
+| Tầng Đánh Giá | Chỉ Số (Metric) | Official Benchmark | Strict Decontaminated | Ý Nghĩa Kỹ Thuật & Vận Hành |
+|---|---|---:|---:|---|
+| **Classification** | **Accuracy** | **89.38%** | **89.42%** | Tỷ lệ dự đoán chính xác trên 77 intent |
+| | **Macro-F1** | **89.35%** | **89.38%** | Tính đồng đều giữa các nhóm nhãn |
+| | **Top-3 Accuracy** | **96.92%** | **96.98%** | Nhãn đúng nằm trong 3 gợi ý hàng đầu |
+| | **Domain Accuracy**| **95.49%** | **95.42%** | Ánh xạ vào 10 miền nghiệp vụ (Coarse Routing) |
+| **Calibration** | **Calibrated ECE** | **0.2045** | **0.2111** | Expected Calibration Error sau Platt Scaling |
+| | **Log-Loss** | **0.5646** | **0.5707** | Cross-entropy loss sau hiệu chỉnh xác suất |
+| | **Brier Score** | **0.2212** | **0.2241** | Trung bình bình phương sai số xác suất |
+| **Model Selective**| **Reject Threshold** | **0.4800** | **0.4600** | Ngưỡng xác suất tối ưu chọn trên Validation |
+| | **Acceptance Coverage** | **82.82%** | **84.90%** | Tỷ lệ ticket có $Confidence \ge Threshold$ |
+| | **Accepted Accuracy** | **95.73%** | **95.60%** | Độ chính xác chỉ tính trên các ca accepted |
+| | **Selective Risk** | **4.27%** | **4.40%** | Tỷ lệ lỗi trong các ca accepted (ngưỡng SLO $\le 5\%$) |
+| **Operational Policy** | **Auto-Route Coverage** | **77.01%** | **78.77%** | Tỷ lệ thực tế được chuyển thẳng vào hàng đợi tự động |
+| *(Full System)* | **Auto-Route Accuracy** | **95.70%** | **95.75%** | **Độ chính xác thực tế của luồng tự động hóa** |
+| | **Auto-Route Error** | **4.30%** | **4.25%** | Tỷ lệ lỗi thực tế của toàn bộ hệ thống |
+| | **Human Review Rate** | **16.36%** | **14.19%** | Tỷ lệ ca mập mờ / OOD chuyển kiểm duyệt thường |
+| | **Priority Escalation Rate** | **6.62%** | **7.05%** | Tỷ lệ ca an ninh chuyển hàng đợi khẩn cấp |
+| **High-Risk Safety**| **High-Risk Recall** | **94.00%** | **97.00%** | Tỷ lệ phát hiện và leo thang thành công ca nhạy cảm |
+| | **High-Risk Precision**| **92.16%** | **89.40%** | Độ tin cậy của các ca được leo thang khẩn cấp |
+| **Curve & Limits** | **AURC** | **0.0190** | **0.0206** | Area Under Risk-Coverage Curve (càng nhỏ càng tốt) |
+| | **Coverage @ 5% Risk** | **86.59%** | **86.56%** | Độ phủ tối đa khi chặn ngưỡng lỗi $\le 5\%$ |
+| | **Coverage @ 3% Risk** | **75.65%** | **76.82%** | Độ phủ tối đa khi chặn ngưỡng lỗi $\le 3\%$ |
+| **OOD Benchmark** | **OOD Recall** | **82.00%** | **82.00%** | Tỷ lệ nhận diện các truy vấn ngoài phạm vi |
+| *(Dedicated 50-item)*| **False Acceptance Rate** | **8.00%** | **8.00%** | Tỷ lệ truy vấn OOD bị auto-route nhầm |
+| | **Safe Containment Rate** | **92.00%** | **92.00%** | Tỷ lệ câu hỏi OOD được giữ an toàn khỏi auto-route |
 
 ---
 
-## 📁 Cấu Trúc Mã Nguồn (Repository Structure)
+## 🌟 4. Các Điểm Nâng Cấp Kỹ Thuật (Engineering Highlights)
+
+### 1. Data Quality Contract: Audit trước Deduplication
+- **Lỗi trước đây**: Hàm clean gọi `drop_duplicates(subset=["text"])` trước khi audit nhãn xung đột, khiến hai câu cùng text nhưng khác nhãn bị xoá mất 1 dòng, che giấu lỗi data quality.
+- **Thiết kế mới**:
+  `Raw CSV` $\rightarrow$ `Schema Validation` $\rightarrow$ `NFKC Normalization` $\rightarrow$ `Audit Conflicting Labels` $\rightarrow$ `Audit Duplicates` $\rightarrow$ `Fail on Violation` $\rightarrow$ `Clean Dataset`.
+
+### 2. Dual Benchmarks & Immutable Official Test
+- Tập dữ liệu gốc Banking77 từ PolyAI tồn tại **11 câu trùng lặp ngữ nghĩa** giữa tập train và tập test.
+- Hệ thống hỗ trợ 2 benchmark rõ ràng:
+  - **Official Benchmark**: Giữ nguyên phân chia công bố để đối sánh học thuật.
+  - **Strict Decontaminated Benchmark**: Loại bỏ các mẫu dev trùng lặp với test bằng normalized fingerprint, đảm bảo **0% leakage chéo** giữa dev và test.
+- `load_official_test()` là **Report-Only & Immutable**: Tuyệt đối không drop duplicates hay lọc bỏ mẫu, bảo toàn nguyên vẹn 3,080 hàng công bố.
+
+### 3. Tách Biệt Hoàn Toàn Display Top-K và Safety Scanner
+- **Lỗi trước đây**: Safety scan duyệt qua danh sách `top_k_candidates`. Người dùng truyền `top_k=1` thì policy chỉ kiểm tra Top-1, truyền `top_k=5` thì policy quét Top-5 $\Rightarrow$ Hành vi an ninh thay đổi theo tham số hiển thị!
+- **Thiết kế mới**: `RiskAssessor` **luôn luôn quét toàn bộ các lớp rủi ro cao trên toàn bộ 77 xác suất**, độc lập tuyệt đối với tham số `top_k` của người dùng.
+
+### 4. Tách Rời Prediction, Risk Assessment, và Routing Decision
+Tách thành 3 hợp đồng dữ liệu độc lập tuân thủ Single Responsibility:
+- `IntentPrediction`: Intent dự đoán của model, Domain tương ứng, Confidence, Margin, Entropy, và danh sách Alternatives.
+- `RiskAssessment`: Cờ cảnh báo rủi ro cao, intent rủi ro phát hiện, điểm rủi ro, cờ OOD.
+- `RoutingDecision`: Hành động (`auto_route`, `human_review`, `priority_human_review`), `queue_id`, `priority`, cờ review, reason codes.
+- Khi có cảnh báo `HIGH_RISK_CANDIDATE`, hệ thống ưu tiên leo thang nhưng **không thay đổi hoặc gán sai intent/domain dự đoán ban đầu của mô hình**.
+
+### 5. Intent $\ne$ Queue (Operational Queue Resolution)
+Intent chi tiết được ánh xạ sang các hàng đợi vận hành chuyên biệt:
+- `card_arrival`, `card_delivery_estimate` $\rightarrow$ `card_operations`
+- `compromised_card`, `lost_or_stolen_card` $\rightarrow$ `fraud_security_queue` (Priority: `critical`)
+- `top_up_failed` $\rightarrow$ `topup_support_queue` (Priority: `high`)
+- Abstain / Out-of-Distribution $\rightarrow$ `general_human_review_queue`
+
+### 6. Tối Ưu Hóa Ngưỡng Đồng Thời Theo Safety SLO
+Không dùng ngưỡng hard-code 0.45 và trigger 0.20 cố định. Bộ tối ưu hóa duyệt grid search trên tập Threshold Validation độc lập:
+$$\max \text{Auto-Route Coverage} \quad \text{s.t.} \quad \text{Error} \le 5\% \quad \text{and} \quad \text{High-Risk Recall} \ge 95\%$$
+
+### 7. Out-of-Distribution (OOD) Guard & Benchmark Set
+- Bộ lọc OOD Guard đa tầng phát hiện các câu hỏi phi ngân hàng (crypto, bảo hiểm, bất động sản, chit-chat, gibberish) dựa trên:
+  - Kiểm tra cú pháp, độ dài cực ngắn, chuỗi ký tự lặp.
+  - Phân tích độ phủ từ khóa nội dung (Content-word Footprint, lọc bỏ stopwords).
+  - Độ phân tán xác suất cực hạn (xác suất $< 0.22$ trong bài toán 77 nhãn).
+- Bộ dữ liệu đánh giá riêng biệt `data/evaluation/ood.jsonl` (50 ca thực tế) kiểm chứng tỷ lệ an toàn đạt **92.00%**.
+
+### 8. Production ModelBundle Contract & Readiness Probe
+Gói đóng gói mô hình bao gồm đầy đủ:
+- `router.joblib`: Binary weights.
+- `model_manifest.json`: Băm SHA-256 của artifact, checksums dữ liệu nguồn, runtime phiên bản (`scikit-learn 1.9.0`, `numpy 2.4.6`, `joblib 1.5.3`).
+- `config.json`, `taxonomy.json`, `policy.json`.
+- Endpoint `GET /health/ready` thực sự nạp weights, kiểm tra checksum SHA-256, kiểm định 77 lớp nhãn và tính toàn vẹn của bảng taxonomy trước khi nhận traffic.
+
+### 9. Structured Telemetry & Human Feedback Loop
+- Log sự kiện có tầng lọc dữ liệu nhạy cảm PII (`redact_pii` che số thẻ 13-19 số, email, số điện thoại, số tài khoản).
+- Endpoint `POST /v1/feedback` cho phép ghi nhận các ca chuyên viên hiệu chỉnh nhãn đúng vào `reports/feedback_events.jsonl`, tạo nguồn dữ liệu cho chu kỳ tái huấn luyện trong tương lai.
+
+---
+
+## 📂 5. Cấu Trúc Mã Nguồn
 
 ```text
 Banking77-Support-Router/
+├── configs/
+│   ├── model.yaml                     # Cấu hình siêu tham số TF-IDF và Logistic Regression
+│   ├── routing_policy.yaml            # Cấu hình SLOs tối ưu hóa và ngưỡng runtime
+│   └── taxonomy.yaml                  # Ánh xạ 77 intent, 10 domain và operational queues
 ├── data/
-│   └── raw/                       # Dữ liệu gốc train.csv, test.csv (kèm SHA256 checksum)
+│   ├── raw/                           # Dữ liệu gốc train.csv, test.csv
+│   └── evaluation/
+│       └── ood.jsonl                  # Dataset đánh giá Out-of-Distribution độc lập
 ├── models/
-│   ├── config.json                # Metadata runtime, threshold, domain taxonomy
-│   ├── model_manifest.json        # Manifest đầy đủ: checksum, split sizes, parameters
-│   └── router.joblib              # Pipeline TF-IDF + Platt Scaled Classifier
+│   ├── router.joblib                  # Frozen Model weights
+│   ├── model_manifest.json            # Manifest kiểm định băm SHA-256 & runtime
+│   ├── config.json                    # Cấu hình runtime & domain mapping
+│   ├── taxonomy.json                  # Snapshot taxonomy đã nạp
+│   └── policy.json                    # Snapshot policy đã tối ưu
 ├── reports/
-│   ├── confusion_pairs.json       # Top-20 cặp intent hay nhầm lẫn kèm ví dụ
-│   ├── high_risk_metrics.json     # Báo cáo chi tiết về recall/precision ca rủi ro cao
-│   ├── risk_coverage_curve.json   # 100 điểm đường cong Risk-Coverage & AURC
-│   ├── test_metrics.json          # Bộ chỉ số Canonical trên tập Test độc lập
-│   └── validation_metrics.json    # Báo cáo Data Quality Contract & Validation metrics
-├── scripts/
-│   └── download_data.py           # Script tải dữ liệu kèm kiểm tra SHA-256
+│   ├── test_metrics.json              # Kết quả đánh giá trên Official Test Benchmark
+│   ├── strict_decontaminated_test_metrics.json  # Kết quả đánh giá trên Strict Benchmark
+│   ├── risk_coverage_curve.json       # Tọa độ đường cong Risk-Coverage & AURC
+│   ├── high_risk_metrics.json         # Báo cáo an ninh rủi ro cao
+│   ├── ood_metrics.json               # Báo cáo phát hiện Out-of-Scope
+│   └── confusion_pairs.json           # Top 20 cặp nhãn dễ nhầm lẫn nhất
 ├── src/
-│   ├── __init__.py
-│   ├── api.py                     # FastAPI REST API (/health, /predict, /predict/batch)
-│   ├── data.py                    # Exact 77-class taxonomy, 4 splits, quality contracts
-│   ├── evaluate.py                # Đánh giá đa tầng: Intent, Calibration, Selective, High-Risk
-│   ├── policy.py                  # Routing Policy Engine: Abstain & High-Risk Precedence
-│   ├── train.py                   # 4-split training, Platt scaling, threshold selection
-│   └── utils.py                   # ECE, Shannon Entropy, PII Redaction, logging
+│   ├── banking_router/
+│   │   ├── config.py                  # Trình nạp YAML cấu hình
+│   │   ├── utils.py                   # Tiện ích logging, ECE, entropy, save_json
+│   │   ├── data/                      # Tầng hợp đồng dữ liệu & chuẩn hóa
+│   │   │   ├── contracts.py           # 77 nhãn chuẩn & domain mapping
+│   │   │   ├── loader.py              # Đọc CSV & nạp official test bất biến
+│   │   │   ├── normalization.py       # NFKC text normalization & SHA-256
+│   │   │   ├── audit.py               # Audit conflicts & duplicates trước dedup
+│   │   │   └── split.py               # Phân chia 4 vai trò & dual benchmark
+│   │   ├── modeling/                  # Tầng huấn luyện & hiệu chỉnh xác suất
+│   │   │   ├── pipeline.py            # FeatureUnion (Word 1-2 + Char 3-5)
+│   │   │   ├── calibration.py         # Platt Scaling Calibrator
+│   │   │   ├── artifact.py            # ModelBundle contract & SHA-256 check
+│   │   │   └── training.py            # Huấn luyện & tối ưu ngưỡng đồng thời
+│   │   ├── routing/                   # Bộ máy phân luồng & quyết định
+│   │   │   ├── schemas.py             # Decoupled Prediction, Risk, Decision
+│   │   │   ├── taxonomy.py            # Taxonomy & Queue Resolver
+│   │   │   ├── risk.py                # Security Risk Scanner (độc lập top-k)
+│   │   │   ├── ood.py                 # Out-of-Distribution Query Guard
+│   │   │   ├── policy.py              # Routing Policy Engine đa tầng
+│   │   │   └── service.py             # RoutingService orchestrator
+│   │   ├── evaluation/                # Tầng đánh giá đa tầng
+│   │   │   ├── classification.py      # Accuracy, Macro-F1, Top-3, Domain Acc
+│   │   │   ├── calibration.py         # ECE, Log-loss, Brier Score
+│   │   │   ├── selective.py           # Coverage, Selective Risk, AURC
+│   │   │   ├── safety.py              # Operational Safety & Confusion Pairs
+│   │   │   ├── ood_eval.py            # Đánh giá OOD Recall & False Acceptance
+│   │   │   └── evaluator.py           # Bộ đánh giá benchmark tổng hợp
+│   │   ├── telemetry/                 # Giám sát & An toàn thông tin
+│   │   │   ├── privacy.py             # PII Masking regex
+│   │   │   └── events.py              # Ghi nhận sự kiện & Feedback Loop
+│   │   └── api/                       # HTTP REST Adapter
+│   │       ├── schemas.py             # Pydantic schemas v1/route & feedback
+│   │       └── app.py                 # FastAPI endpoints (live, ready, route)
+│   ├── data.py                        # Facade tương thích ngược
+│   ├── policy.py                      # Facade tương thích ngược
+│   ├── train.py                       # CLI Runner huấn luyện
+│   ├── evaluate.py                    # CLI Runner đánh giá
+│   ├── api.py                         # Facade tương thích ngược
+│   └── utils.py                       # Facade tương thích ngược
 ├── tests/
-│   ├── test_data_contract.py      # Kiểm tra 77-class taxonomy, overlap 4 split, label conflicts
-│   └── test_smoke.py              # Kiểm tra policy abstain, high-risk precedence, batch API
-├── Dockerfile                     # Containerization cho triển khai Production
-├── Makefile                       # Lệnh tắt điều khiển dự án
-├── pytest.ini                     # Cấu hình Pytest
-├── README.md                      # Tài liệu dự án chuẩn mực
-└── requirements.txt               # Thư viện phụ thuộc
+│   ├── unit/
+│   │   ├── test_data_invariants.py    # Kiểm định hợp đồng dữ liệu & benchmark
+│   │   └── test_policy_invariants.py  # Kiểm định tính độc lập của safety scan
+│   ├── integration/
+│   │   └── test_service_and_api.py    # Kiểm định RoutingService, Bundle, API
+│   ├── test_data_contract.py          # Unit tests dữ liệu chuẩn hóa
+│   └── test_smoke.py                  # Unit tests chính sách & API smoke
+├── scripts/
+│   ├── download_data.py               # Tải dữ liệu mẫu BANKING77
+│   └── manual_api_test.py             # Kịch bản kiểm thử API thủ công
+├── Dockerfile                         # Container image với Readiness check
+└── requirements.txt                   # Phụ thuộc môi trường chính xác
 ```
 
 ---
 
-## ⚙️ Hướng Dẫn Tái Lập Dự Án (Quickstart)
+## 🚀 6. Hướng Dẫn Sử Dụng Nhanh (Quickstart)
 
-### 1. Cài đặt môi trường
-
+### 1. Cài Đặt Môi Trường
 ```bash
-# Khởi tạo môi trường ảo Python
+# Tạo môi trường ảo
 python -m venv .venv
-
-# Kích hoạt môi trường (Windows PowerShell)
-.venv\Scripts\Activate.ps1
-# Linux/macOS: source .venv/bin/activate
+source .venv/bin/activate  # Trên Windows: .venv\Scripts\activate
 
 # Cài đặt thư viện phụ thuộc
 pip install -r requirements.txt
 ```
 
-### 2. Tải dữ liệu & Huấn luyện Pipeline Canonical
-
+### 2. Huấn Luyện & Tối Ưu Hóa Chính Sách
 ```bash
-# Tải tập dữ liệu BANKING77 và kiểm tra SHA-256
-python scripts/download_data.py
+# Huấn luyện trên chuẩn Official Published Split
+python -m src.train --benchmark official
 
-# Huấn luyện mô hình, hiệu chỉnh xác suất và chọn ngưỡng trên Threshold Validation
-python -m src.train
+# HOẶC huấn luyện trên chuẩn Strict Decontaminated Split (loại bỏ trùng lặp test)
+python -m src.train --benchmark strict_decontaminated
+```
 
-# Đánh giá toàn diện trên tập Test độc lập (sinh toàn bộ reports JSON)
+### 3. Đánh Giá Toàn Diện Benchmark
+```bash
 python -m src.evaluate
 ```
 
-### 3. Chạy Kiểm Thử Tự Động (Unit Tests & Data Contracts)
-
+### 4. Chạy Toàn Bộ Test Suite
 ```bash
-python -m pytest -v
+python -m pytest tests/ -v
 ```
 
-### 4. Khởi chạy REST API Service
-
+### 5. Khởi Động REST API Service
 ```bash
-python -m uvicorn src.api:app --reload --port 8000
+uvicorn src.api:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Kiểm tra trạng thái sẵn sàng:
+```bash
+curl -X GET http://127.0.0.1:8000/health/ready
+```
+
+### 6. Phân Luồng Ticket Khách Hàng (Canonical `/v1/route`)
+```bash
+curl -X POST "http://127.0.0.1:8000/v1/route" \
+     -H "Content-Type: application/json" \
+     -d '{"text": "I lost my phone and card, help me immediately!", "top_k": 3}'
+```
+
+**JSON Response mẫu (Decoupled Output):**
+```json
+{
+  "request_id": "req_8d66cb0260ce",
+  "prediction": {
+    "intent": "lost_or_stolen_phone",
+    "domain": "account_security",
+    "confidence": 0.8133,
+    "margin": 0.6215,
+    "entropy": 1.1245,
+    "alternatives": [
+      {
+        "intent": "lost_or_stolen_phone",
+        "domain": "account_security",
+        "confidence": 0.8133
+      },
+      {
+        "intent": "lost_or_stolen_card",
+        "domain": "account_security",
+        "confidence": 0.1241
+      },
+      {
+        "intent": "compromised_card",
+        "domain": "account_security",
+        "confidence": 0.0312
+      }
+    ]
+  },
+  "risk": {
+    "high_risk_detected": true,
+    "high_risk_intent": "lost_or_stolen_phone",
+    "high_risk_score": 0.8133,
+    "ood_detected": false
+  },
+  "decision": {
+    "action": "priority_human_review",
+    "queue": "fraud_security_queue",
+    "priority": "critical",
+    "requires_human_review": true,
+    "reason_codes": [
+      "HIGH_RISK_INTENT"
+    ]
+  },
+  "metadata": {
+    "model_version": "banking77-support-triage-v3",
+    "policy_version": "risk-aware-triage-v3"
+  }
+}
+```
+
+### 7. Gửi Phản Hồi Chuyên Viên (Feedback Loop)
+```bash
+curl -X POST "http://127.0.0.1:8000/v1/feedback" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "request_id": "req_8d66cb0260ce",
+       "reviewed_intent": "lost_or_stolen_card",
+       "reviewer_id": "senior_agent_07",
+       "notes": "Customer confirmed card was stolen along with phone"
+     }'
 ```
 
 ---
 
-## 🔌 Hướng Dẫn Sử Dụng API & Contract Mới
+## 🐳 7. Đóng Gói Docker Container
 
-### Endpoint: `POST /predict`
+```bash
+# 1. Đảm bảo model artifact đã được tạo trước khi build
+python -m src.train
 
-**Request:**
-```json
-{
-  "text": "I think someone stole my card and took money at an ATM",
-  "top_k": 3
-}
-```
+# 2. Build Docker container image
+docker build -t banking77-support-router:v3 .
 
-**Response (Ưu tiên Rủi Ro Cao - Priority Escalation):**
-```json
-{
-  "decision": "priority_escalation",
-  "abstained": false,
-  "is_unknown": false,
-  "intent": "compromised_card",
-  "domain": "account_security",
-  "top_intent": "compromised_card",
-  "confidence": 0.8124,
-  "margin": 0.6512,
-  "entropy": 0.9421,
-  "alternatives": [
-    {"intent": "compromised_card", "domain": "account_security", "confidence": 0.8124},
-    {"intent": "lost_or_stolen_card", "domain": "account_security", "confidence": 0.1612},
-    {"intent": "card_payment_not_recognised", "domain": "transactions_refunds", "confidence": 0.0125}
-  ],
-  "route": "priority_human_review",
-  "requires_human_review": true,
-  "review_reason": "HIGH_RISK_INTENT",
-  "model_version": "banking77-tfidf-calibrated-lr-v2",
-  "policy_version": "risk-aware-policy-v2"
-}
-```
+# 3. Chạy container với port 8000
+docker run -d -p 8000:8000 --name banking-router banking77-support-router:v3
 
-**Response (Độ Tin Cậy Dưới Ngưỡng - Abstain Semantics):**
-```json
-{
-  "decision": "abstain",
-  "abstained": true,
-  "is_unknown": true,
-  "intent": null,
-  "domain": null,
-  "top_intent": "pending_cash_withdrawal",
-  "confidence": 0.3812,
-  "margin": 0.0921,
-  "entropy": 2.4512,
-  "alternatives": [
-    {"intent": "pending_cash_withdrawal", "domain": "atm_cash", "confidence": 0.3812},
-    {"intent": "declined_cash_withdrawal", "domain": "atm_cash", "confidence": 0.2891}
-  ],
-  "route": "human",
-  "requires_human_review": true,
-  "review_reason": "LOW_CONFIDENCE",
-  "model_version": "banking77-tfidf-calibrated-lr-v2",
-  "policy_version": "risk-aware-policy-v2"
-}
+# 4. Kiểm tra sức khỏe container (Readiness Probe)
+curl http://127.0.0.1:8000/health/ready
 ```
 
 ---
 
-## 📝 Mẫu Trình Bày Chuẩn Hóa Trong CV AI / ML Engineer
+## 📜 8. License
 
-### Tiếng Việt:
-- **Xây dựng Banking77 Support Triage Platform (77 intents)** với cơ chế **Selective Classification** và **Probability Calibration (Platt Scaling)**, đạt **Selective Coverage 81.07%** với **Selective Risk chỉ 6.01%** (độ chính xác luồng tự động đạt **93.99%**) trên tập Test độc lập (3,079 mẫu).
-- **Thiết kế giao thức 4 split nghiêm ngặt**: Tách biệt hoàn toàn Train (70%), Calibration (15%), Threshold Validation (15%) và Official Test, ngăn chặn 100% rò rỉ dữ liệu và tránh tình trạng tối ưu hóa ngưỡng trên tập kiểm thử.
-- **Xây dựng High-Risk Escalation Policy**: Tự động nhận diện và leo thang ưu tiên các ca nhạy cảm (thẻ bị xâm nhập, mất thẻ, nuốt thẻ) với **Escalation Recall đạt 92.50%** và **Precision 86.45%**, ngăn ngừa rủi ro gian lận.
-- **Triển khai Production REST Service (FastAPI)**: Hỗ trợ Vectorized Batch Inference, tích hợp PII Redaction bảo mật dữ liệu khách hàng, đo lường độ mập mờ qua Margin/Entropy và thiết lập hệ thống Data Quality Contract CI/CD.
-
-### Tiếng Anh:
-- **Architected the Banking77 Support Triage Platform (77 classes)** integrating **Platt Scaling probability calibration** and **selective prediction**, achieving **81.07% coverage** at a low **6.01% selective risk** (**93.99% accepted accuracy**) on an independent test set.
-- **Implemented a Strict 4-Split Pipeline**: Decoupled Train (70%), Calibration (15%), Threshold Validation (15%), and Official Test to eliminate data leakage and prevent threshold overfitting.
-- **Engineered Risk-Aware Human Escalation**: Built an automated priority routing policy for high-risk intents (compromised card, stolen card, card swallowed), achieving **92.50% escalation recall** and **86.45% precision**.
-- **Deployed Production FastAPI REST Microservices**: Optimized batch inference via single-pass vectorization, added PII redaction for customer privacy, and integrated CI-enforced data quality and taxonomy contracts.
+Phát hành theo giấy phép [MIT License](LICENSE). Bộ dữ liệu gốc thuộc bản quyền của [PolyAI Banking77](https://github.com/PolyAI-LDN/task-specific-datasets).

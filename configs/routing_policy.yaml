@@ -1,0 +1,33 @@
+# Operational Routing Policy Configuration & Service Level Objectives (SLO)
+
+policy_version: "risk-aware-triage-v3"
+
+# Optimization SLOs for threshold selection on validation split
+optimization:
+  target_selective_risk: 0.05     # Maximum acceptable error rate in auto-routed tickets
+  target_high_risk_recall: 0.95   # Minimum recall for security priority escalations
+  min_coverage_target: 0.80       # Preferred auto-routing coverage
+  min_coverage_floor: 0.65        # Absolute minimum acceptable coverage if constraints are tight
+  threshold_candidates:
+    start: 0.20
+    stop: 0.95
+    steps: 76
+  risk_trigger_candidates:
+    start: 0.05
+    stop: 0.50
+    steps: 46
+
+# Default tuned thresholds (overwritten by policy optimizer during training)
+runtime_thresholds:
+  reject_threshold: 0.45
+  high_risk_trigger: 0.20
+  min_margin: 0.02
+  max_entropy: 3.80
+
+# Out-of-Distribution (OOD) Guard parameters
+ood_guard:
+  enabled: true
+  min_text_length_chars: 4
+  min_tokens: 2
+  lexical_similarity_threshold: 0.08
+  low_confidence_ood_threshold: 0.22

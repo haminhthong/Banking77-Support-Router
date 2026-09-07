@@ -3,10 +3,13 @@ __pycache__/
 .venv/
 .env
 .pytest_cache/
+.pytest_tmp/
+scratch/
 mlruns/
 data/raw/*
 data/processed/*
 models/*.joblib
+reports/*.jsonl
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !models/.gitkeep
