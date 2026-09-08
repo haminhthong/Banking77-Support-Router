@@ -72,6 +72,7 @@ class TicketRepository:
         final_queue: str | None,
         resolution: str,
         notes: str | None,
+        reason_code: str | None = None,
     ) -> dict[str, Any]:
         connection = connect_database(self.database_path)
         try:
@@ -81,10 +82,10 @@ class TicketRepository:
             now = datetime.now(timezone.utc).isoformat()
             cursor = connection.execute(
                 """
-                INSERT INTO reviews (request_id, reviewer_id, final_intent, final_queue, resolution, created_at, notes_redacted)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO reviews (request_id, reviewer_id, final_intent, final_queue, resolution, created_at, notes_redacted, reason_code)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (request_id, reviewer_id, final_intent, final_queue, resolution, now, redact_pii(notes) if notes else None),
+                (request_id, reviewer_id, final_intent, final_queue, resolution, now, redact_pii(notes) if notes else None, reason_code),
             )
             connection.execute(
                 "UPDATE tickets SET status = 'REVIEWED' WHERE request_id = ?",
@@ -102,6 +103,7 @@ class TicketRepository:
                 "queue_corrected": final_queue is not None and ticket["predicted_queue"] != final_queue,
                 "resolution": resolution,
                 "reviewer_id": reviewer_id,
+                "reason_code": reason_code,
             }
         finally:
             connection.close()

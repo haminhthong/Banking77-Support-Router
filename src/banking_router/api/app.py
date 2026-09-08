@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import time
 from pathlib import Path
 from typing import Any
@@ -69,6 +70,8 @@ def get_routing_service() -> RoutingService:
             min_margin=policy_cfg.get("min_margin", cfg.get("min_margin")),
             max_entropy=policy_cfg.get("max_entropy", cfg.get("max_entropy")),
             high_risk_trigger=float(critical_cfg.get("minimum_probability", policy_cfg.get("high_risk_trigger", cfg.get("high_risk_trigger", 0.20)))),
+            minimum_risk_signal=float(critical_cfg.get("minimum_signal_probability", 0.16)),
+            minimum_ood_security_signal=float(critical_cfg.get("minimum_ood_security_signal", 0.30)),
             taxonomy_resolver=taxonomy,
         )
         risk_assessor = RiskAssessor(
@@ -81,17 +84,20 @@ def get_routing_service() -> RoutingService:
             min_tokens=int(scope_cfg.get("min_tokens", 2)),
             lexical_similarity_threshold=float(scope_cfg.get("lexical_novelty_threshold", 0.08)),
             low_confidence_ood_threshold=float(scope_cfg.get("low_confidence_threshold", 0.22)),
+            unsupported_threshold=float(scope_cfg.get("unsupported_threshold", 0.80)),
         )
         _service = RoutingService(
             model=_bundle.model,
             policy=policy,
             risk_assessor=risk_assessor,
             ood_guard=ood_guard,
+            scope_model=_bundle.scope_model,
             taxonomy=taxonomy,
             metadata={
                 "model_version": _bundle.manifest.get("model_version", cfg.get("version", "unknown")),
                 "policy_version": _bundle.manifest.get("policy_version", policy_cfg.get("policy_version", "unknown")),
                 "normalization_version": _bundle.manifest.get("normalization_version", "legacy"),
+                "scope_model_version": _bundle.manifest.get("scope_model_version") or "heuristic-only",
             },
         )
     return _service
@@ -108,7 +114,10 @@ def readiness() -> dict[str, Any]:
     """Validate model bundle readiness, class count, and taxonomy integrity."""
     try:
         service = get_routing_service()
-        bundle = _bundle or load_and_validate_bundle(resolve_models_dir(MODELS_DIR), verify_checksum=True)
+        release_dir = resolve_models_dir(MODELS_DIR)
+        bundle = _bundle or load_and_validate_bundle(release_dir, verify_checksum=True)
+        gate_path = release_dir / "release_gate.json"
+        gate = json.loads(gate_path.read_text(encoding="utf-8")) if gate_path.exists() else {"status": "UNKNOWN"}
         return {
             "status": "ready",
             "model_ready": True,
@@ -116,6 +125,7 @@ def readiness() -> dict[str, Any]:
             "policy_version": bundle.config.get("policy_version", "unknown"),
             "class_count": len(bundle.model.classes_),
             "high_risk_classes_count": len(TaxonomyResolver(bundle.taxonomy).get_critical_intents()),
+            "release_gate": gate,
         }
     except Exception as exc:
         raise HTTPException(
@@ -194,6 +204,8 @@ def route_ticket(req: RouteRequest) -> RouteResponse:
             high_risk_score=res.risk.high_risk_score,
             critical_probability=res.risk.critical_probability,
             ood_detected=res.risk.ood_detected,
+            risk_category=res.risk.risk_category,
+            risk_group_mass=res.risk.risk_group_mass,
         ),
         scope=ScopeResponse(
             supported=not res.risk.ood_detected,
@@ -202,6 +214,7 @@ def route_ticket(req: RouteRequest) -> RouteResponse:
         versions={
             "model": str(res.metadata.get("model_version", "unknown")),
             "policy": str(res.metadata.get("policy_version", "unknown")),
+            "scope_model": str(res.metadata.get("scope_model_version", "heuristic-only")),
         },
         decision=DecisionResponse(
             action=res.decision.action,
@@ -289,6 +302,7 @@ def submit_feedback(fb: FeedbackRequest) -> dict[str, Any]:
             final_queue=fb.reviewed_queue,
             resolution=fb.resolution,
             notes=fb.notes,
+            reason_code=fb.reason_code,
         )
         return {"status": "recorded", "feedback": review}
 
@@ -304,6 +318,7 @@ def submit_feedback(fb: FeedbackRequest) -> dict[str, Any]:
         resolution=fb.resolution,
         reviewer_id=fb.reviewer_id,
         notes=fb.notes,
+        reason_code=fb.reason_code,
     )
     return {"status": "recorded", "feedback": record}
 
@@ -321,6 +336,7 @@ def review_ticket(request_id: str, fb: FeedbackRequest) -> dict[str, Any]:
             final_queue=fb.reviewed_queue,
             resolution=fb.resolution,
             notes=fb.notes,
+            reason_code=fb.reason_code,
         )
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=f"Unknown ticket: {request_id}") from exc

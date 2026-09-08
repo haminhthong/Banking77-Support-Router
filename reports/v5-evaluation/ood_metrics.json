@@ -1,0 +1,66 @@
+{
+  "ood_evaluated": true,
+  "scope_split": "locked",
+  "ood_total_samples": 10,
+  "ood_detected_count": 10,
+  "ood_recall": 1.0,
+  "ood_false_acceptance_rate": 0.0,
+  "safe_containment_rate": 1.0,
+  "oos_auto_route_rate": 0.0,
+  "oos_containment_rate": 1.0,
+  "auto_routed_count": 0,
+  "human_reviewed_count": 10,
+  "priority_escalated_count": 0,
+  "category_breakdown": {
+    "greeting": {
+      "total": 1,
+      "detected": 1,
+      "auto_routed": 0
+    },
+    "general_knowledge": {
+      "total": 1,
+      "detected": 1,
+      "auto_routed": 0
+    },
+    "unsupported_product_mortgage": {
+      "total": 1,
+      "detected": 1,
+      "auto_routed": 0
+    },
+    "unsupported_product_crypto": {
+      "total": 1,
+      "detected": 1,
+      "auto_routed": 0
+    },
+    "unsupported_product_brokerage": {
+      "total": 1,
+      "detected": 1,
+      "auto_routed": 0
+    },
+    "technical_support_irrelevant": {
+      "total": 1,
+      "detected": 1,
+      "auto_routed": 0
+    },
+    "gibberish": {
+      "total": 1,
+      "detected": 1,
+      "auto_routed": 0
+    },
+    "too_short": {
+      "total": 1,
+      "detected": 1,
+      "auto_routed": 0
+    },
+    "corporate_info": {
+      "total": 1,
+      "detected": 1,
+      "auto_routed": 0
+    },
+    "wealth_management": {
+      "total": 1,
+      "detected": 1,
+      "auto_routed": 0
+    }
+  }
+}

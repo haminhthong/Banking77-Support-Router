@@ -1,4 +1,4 @@
-"""Data schemas decoupling Intent Prediction, Security Risk Assessment, and Operational Routing Decisions."""
+"""Schema tách prediction, security risk và quyết định routing."""
 
 from __future__ import annotations
 
@@ -39,17 +39,15 @@ class QueuePrediction:
 
 @dataclass(frozen=True)
 class RiskAssessment:
-    """Security risk and query quality assessment.
-
-    Evaluates high-risk threat levels across all 77 intent probabilities
-    and detects out-of-distribution (OOD) queries independently of top-k presentation.
-    """
+    """Đánh giá risk trên toàn bộ phân phối intent và tín hiệu scope."""
     high_risk_detected: bool
     high_risk_intent: str | None
     high_risk_score: float
     ood_detected: bool
     reason_codes: list[str] = field(default_factory=list)
     critical_probability: float = 0.0
+    risk_category: str | None = None
+    risk_group_mass: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

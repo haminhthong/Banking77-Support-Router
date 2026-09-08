@@ -38,9 +38,13 @@ def connect_database(path: Path | str) -> sqlite3.Connection:
             final_queue TEXT,
             resolution TEXT NOT NULL,
             created_at TEXT NOT NULL,
-            notes_redacted TEXT
+            notes_redacted TEXT,
+            reason_code TEXT
         );
         """
     )
+    columns = {row[1] for row in connection.execute("PRAGMA table_info(reviews)").fetchall()}
+    if "reason_code" not in columns:
+        connection.execute("ALTER TABLE reviews ADD COLUMN reason_code TEXT")
     connection.commit()
     return connection

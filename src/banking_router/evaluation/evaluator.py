@@ -55,8 +55,11 @@ def evaluate_test_benchmark(
     taxonomy = TaxonomyResolver(bundle.taxonomy)
     policy = RoutingPolicy(
         threshold=threshold,
+        queue_threshold=threshold,
+        queue_margin=min_margin,
         high_risk_trigger=high_risk_trigger,
-        min_margin=min_margin,
+        minimum_risk_signal=float(critical_cfg.get("minimum_signal_probability", 0.16)),
+        minimum_ood_security_signal=float(critical_cfg.get("minimum_ood_security_signal", 0.30)),
         max_entropy=max_entropy,
         taxonomy_resolver=taxonomy,
     )
@@ -71,6 +74,7 @@ def evaluate_test_benchmark(
         min_tokens=int(scope_cfg.get("min_tokens", 2)),
         lexical_similarity_threshold=float(scope_cfg.get("lexical_novelty_threshold", 0.08)),
         low_confidence_ood_threshold=float(scope_cfg.get("low_confidence_threshold", 0.22)),
+        unsupported_threshold=float(scope_cfg.get("unsupported_threshold", 0.80)),
     )
 
     routing_service = RoutingService(
@@ -78,6 +82,7 @@ def evaluate_test_benchmark(
         policy=policy,
         risk_assessor=risk_assessor,
         ood_guard=ood_guard,
+        scope_model=bundle.scope_model,
         taxonomy=taxonomy,
         metadata={"model_version": cfg.get("version", "v3")},
     )
@@ -128,7 +133,8 @@ def evaluate_test_benchmark(
         decisions=decisions,
         predictions=pred,
         targets=targets,
-        high_risk_intents=taxonomy.get_critical_intents(),
+        routing_results=routing_results,
+        taxonomy=taxonomy,
     )
 
     # 8. Layer 6: Confusion Pairs Analysis
@@ -145,6 +151,7 @@ def evaluate_test_benchmark(
     ood_metrics = evaluate_ood_benchmark(
         ood_file=ood_file,
         routing_service=routing_service,
+        split="locked",
     )
 
     # Combine canonical metrics payload

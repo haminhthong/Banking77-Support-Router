@@ -15,7 +15,7 @@ PRODUCTION_POINTER = MODELS_DIR / "production.json"
 
 
 def resolve_models_dir(models_dir: str | Path = MODELS_DIR) -> Path:
-    """Resolve the immutable release selected by the production pointer."""
+    """Resolve release và fail closed nếu pointer/gate không hợp lệ."""
     requested = Path(models_dir)
     pointer = requested / "production.json"
     if pointer.exists():
@@ -25,6 +25,13 @@ def resolve_models_dir(models_dir: str | Path = MODELS_DIR) -> Path:
             resolved = requested / str(release)
             if not resolved.exists():
                 raise FileNotFoundError(f"Production release does not exist: {resolved}")
+            if payload.get("promotion_status") == "REJECTED":
+                raise ValueError(f"Production pointer đang trỏ tới release bị từ chối: {resolved}")
+            gate_path = resolved / "release_gate.json"
+            if gate_path.exists():
+                gate = load_json(gate_path)
+                if gate.get("status") != "PASSED" or not gate.get("passed", False):
+                    raise ValueError(f"Release gate chưa đạt: {resolved}")
             return resolved
     return requested
 

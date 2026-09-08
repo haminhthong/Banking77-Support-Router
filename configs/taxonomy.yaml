@@ -84,8 +84,10 @@ intents:
     domain: atm_cash
     queue: fraud_security_queue
     priority: critical
-    risk_tier: critical
-    is_high_risk: true
+    risk:
+      category: physical_card_security
+      tier: critical
+      priority_escalation: true
   cash_withdrawal_charge:
     domain: atm_cash
     queue: fee_inquiry_queue
@@ -94,8 +96,10 @@ intents:
     domain: atm_cash
     queue: fraud_security_queue
     priority: critical
-    risk_tier: critical
-    is_high_risk: true
+    risk:
+      category: unauthorized_cash
+      tier: critical
+      priority_escalation: true
   declined_cash_withdrawal:
     domain: atm_cash
     queue: atm_support_queue
@@ -108,7 +112,10 @@ intents:
     domain: atm_cash
     queue: payment_investigation_queue
     priority: critical
-    risk_tier: critical
+    risk:
+      category: cash_discrepancy
+      tier: high
+      priority_escalation: false
   wrong_exchange_rate_for_cash_withdrawal:
     domain: atm_cash
     queue: fee_inquiry_queue
@@ -123,20 +130,26 @@ intents:
     domain: account_security
     queue: fraud_security_queue
     priority: critical
-    risk_tier: critical
-    is_high_risk: true
+    risk:
+      category: account_compromise
+      tier: critical
+      priority_escalation: true
   lost_or_stolen_card:
     domain: account_security
     queue: fraud_security_queue
     priority: critical
-    risk_tier: critical
-    is_high_risk: true
+    risk:
+      category: physical_card_security
+      tier: critical
+      priority_escalation: true
   lost_or_stolen_phone:
     domain: account_security
     queue: fraud_security_queue
     priority: critical
-    risk_tier: critical
-    is_high_risk: true
+    risk:
+      category: account_compromise
+      tier: critical
+      priority_escalation: true
   passcode_forgotten:
     domain: account_security
     queue: security_support_queue
@@ -183,7 +196,10 @@ intents:
     domain: transfers_payments
     queue: fraud_security_queue
     priority: critical
-    risk_tier: critical
+    risk:
+      category: unauthorized_transaction
+      tier: critical
+      priority_escalation: true
   failed_transfer:
     domain: transfers_payments
     queue: transfer_investigation_queue
@@ -268,7 +284,10 @@ intents:
     domain: transactions_refunds
     queue: fraud_security_queue
     priority: critical
-    risk_tier: critical
+    risk:
+      category: unauthorized_transaction
+      tier: critical
+      priority_escalation: true
   card_payment_wrong_exchange_rate:
     domain: transactions_refunds
     queue: fee_inquiry_queue
@@ -342,16 +361,19 @@ intents:
     queue: international_support_queue
     priority: normal
 
-# Operational queues for routing fallback and escalations
+# Queue vận hành dùng cho fallback và escalation
 system_queues:
   priority_fraud_security: fraud_security_queue
   general_human_review: general_human_review_queue
   ood_review: general_human_review_queue
 
-# Canonical high-risk security intents requiring immediate priority human escalation
-high_risk_intents:
-  - compromised_card
-  - lost_or_stolen_card
-  - lost_or_stolen_phone
-  - card_swallowed
-  - cash_withdrawal_not_recognised
+# Queue escalation theo nhóm risk, tránh hard-code trong policy engine
+risk_groups:
+  physical_card_security:
+    escalation_queue: fraud_security_queue
+  unauthorized_cash:
+    escalation_queue: fraud_security_queue
+  unauthorized_transaction:
+    escalation_queue: fraud_security_queue
+  account_compromise:
+    escalation_queue: fraud_security_queue

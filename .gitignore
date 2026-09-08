@@ -11,7 +11,3 @@ data/raw/*
 data/processed/*
 models/*.joblib
 reports/*.jsonl
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-!models/.gitkeep
-!reports/.gitkeep

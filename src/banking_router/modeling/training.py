@@ -14,10 +14,13 @@ from .calibration import fit_temperature, select_probability_model
 from .pipeline import build_pipeline
 from ..config import get_model_config, get_routing_policy_config, get_taxonomy_config
 from ..data import DEFAULT_HIGH_RISK_INTENTS, compute_file_sha256, get_domain_for_intent, load_training_splits, summarize_split_quality
+from ..data.scope import load_scope_splits
+from .scope import train_scope_classifier
+from ..routing.ood import ScopeGuard
 from ..routing.policy import RoutingPolicy
 from ..routing.queue_projector import QueueProjector
 from ..routing.risk import RiskAssessor
-from ..routing.schemas import IntentPrediction
+from ..routing.schemas import IntentPrediction, RiskAssessment
 from ..routing.taxonomy import TaxonomyResolver
 from ..data.normalization import NORMALIZATION_VERSION
 
@@ -32,38 +35,94 @@ def optimize_queue_policy_thresholds(
     target_wrong_queue_rate: float = 0.05,
     target_critical_recall: float = 0.95,
     min_coverage_floor: float = 0.65,
+    max_entropy: float | None = 3.80,
+    scope_guard: ScopeGuard | None = None,
+    minimum_risk_signal: float = 0.16,
+    minimum_ood_security_signal: float = 0.30,
 ) -> dict[str, Any]:
-    """Select queue/risk thresholds against the operational objective."""
+    """Tối ưu bằng chính ``RoutingPolicy.evaluate`` của runtime.
+
+    Không dùng công thức thu gọn riêng cho train: queue confidence, queue
+    margin, entropy, scope và risk đều đi qua policy engine chung.
+    """
     probabilities = probability_model.predict_proba(val_texts)
     classes = np.asarray(probability_model.classes_)
     projector = QueueProjector(classes, taxonomy)
-    queue_names = np.asarray([projector.project(row).queue for row in probabilities])
-    queue_conf = np.asarray([projector.project(row).confidence for row in probabilities])
-    queue_margin = np.asarray([projector.project(row).margin for row in probabilities])
     target_queues = np.asarray([taxonomy.get_queue(str(intent)) for intent in val_targets])
     critical_indices = [i for i, intent in enumerate(classes) if intent in taxonomy.get_critical_intents()]
     critical_mass = probabilities[:, critical_indices].sum(axis=1) if critical_indices else np.zeros(len(probabilities))
     critical_targets = np.asarray([str(intent) in taxonomy.get_critical_intents() for intent in val_targets])
 
-    queue_thresholds = np.linspace(0.45, 0.95, 51)
-    risk_thresholds = np.linspace(0.10, 0.60, 51)
+    scope = scope_guard or ScopeGuard()
+    precomputed: list[tuple[IntentPrediction, Any, list[str], str | None, float]] = []
+    for row, text in zip(probabilities, val_texts):
+        ranked = row.argsort()[::-1]
+        confidence = float(row[ranked[0]])
+        margin = float(row[ranked[0]] - row[ranked[1]]) if len(ranked) > 1 else 1.0
+        intent = str(classes[ranked[0]])
+        prediction = IntentPrediction(
+            intent=intent,
+            domain=taxonomy.get_domain(intent),
+            confidence=confidence,
+            margin=margin,
+            entropy=float(calculate_entropy(np.asarray([row]))[0]),
+        )
+        queue_prediction = projector.project(row)
+        ood, ood_reasons = scope.detect(str(text), confidence=confidence, margin=margin)
+        risk_intent = max(
+            taxonomy.get_critical_intents(),
+            key=lambda item: float(row[list(classes).index(item)]) if item in classes else 0.0,
+            default=None,
+        )
+        risk_score = float(row[list(classes).index(risk_intent)]) if risk_intent else 0.0
+        precomputed.append((prediction, queue_prediction, ood_reasons if ood else [], risk_intent, risk_score))
+
+    queue_thresholds = np.linspace(0.45, 0.95, 15)
+    queue_margins = np.linspace(0.0, 0.20, 5)
+    risk_thresholds = np.linspace(0.10, 0.60, 16)
     candidates: list[dict[str, Any]] = []
     for queue_threshold in queue_thresholds:
-        for risk_threshold in risk_thresholds:
-            priority = critical_mass >= risk_threshold
-            auto = (~priority) & (queue_conf >= queue_threshold)
-            coverage = float(auto.mean())
-            wrong_queue = float((queue_names[auto] != target_queues[auto]).mean()) if auto.any() else 0.0
-            critical_recall = float((priority & critical_targets).sum() / critical_targets.sum()) if critical_targets.any() else 1.0
-            candidate = {
-                "queue_threshold": float(queue_threshold),
-                "queue_margin": 0.0,
-                "critical_threshold": float(risk_threshold),
-                "auto_route_coverage": coverage,
-                "wrong_queue_rate": wrong_queue,
-                "critical_recall": critical_recall,
-            }
-            candidates.append(candidate)
+        for queue_margin in queue_margins:
+            for risk_threshold in risk_thresholds:
+                policy = RoutingPolicy(
+                    threshold=float(queue_threshold),
+                    queue_threshold=float(queue_threshold),
+                    queue_margin=float(queue_margin),
+                    max_entropy=max_entropy,
+                    high_risk_trigger=float(risk_threshold),
+                    minimum_risk_signal=minimum_risk_signal,
+                    minimum_ood_security_signal=minimum_ood_security_signal,
+                    taxonomy_resolver=taxonomy,
+                )
+                decisions = []
+                for index, (prediction, queue_prediction, ood_reasons, risk_intent, risk_score) in enumerate(precomputed):
+                    risk = RiskAssessment(
+                        high_risk_detected=critical_mass[index] >= risk_threshold,
+                        high_risk_intent=risk_intent,
+                        high_risk_score=risk_score,
+                        ood_detected=bool(ood_reasons),
+                        reason_codes=list(ood_reasons) + (["CRITICAL_RISK_MASS"] if critical_mass[index] >= risk_threshold else []),
+                        critical_probability=float(critical_mass[index]),
+                        risk_category=taxonomy.get_risk_category(risk_intent) if risk_intent else None,
+                    )
+                    decisions.append(
+                        policy.evaluate(prediction, risk, queue_prediction)
+                    )
+                actions = np.asarray([decision.action for decision in decisions])
+                auto = actions == "auto_route"
+                priority = actions == "priority_human_review"
+                coverage = float(auto.mean()) if len(auto) else 0.0
+                routed_queues = np.asarray([decision.queue_id for decision in decisions])
+                wrong_queue = float((routed_queues[auto] != target_queues[auto]).mean()) if auto.any() else 0.0
+                critical_recall = float((priority & critical_targets).sum() / critical_targets.sum()) if critical_targets.any() else 1.0
+                candidates.append({
+                    "queue_threshold": float(queue_threshold),
+                    "queue_margin": float(queue_margin),
+                    "critical_threshold": float(risk_threshold),
+                    "auto_route_coverage": coverage,
+                    "wrong_queue_rate": wrong_queue,
+                    "critical_recall": critical_recall,
+                })
 
     feasible = [
         item for item in candidates
@@ -71,7 +130,16 @@ def optimize_queue_policy_thresholds(
         and item["critical_recall"] >= target_critical_recall
         and item["auto_route_coverage"] >= min_coverage_floor
     ]
-    best = max(feasible or candidates, key=lambda item: (item["auto_route_coverage"], -item["wrong_queue_rate"]))
+    if feasible:
+        best = max(feasible, key=lambda item: (item["auto_route_coverage"], -item["wrong_queue_rate"]))
+    else:
+        # Khi không có điểm thỏa toàn bộ SLO, ưu tiên safety recall trước
+        # coverage; fallback cũ ưu tiên coverage/error nên có thể bỏ sót risk.
+        best = max(candidates, key=lambda item: (
+            item["critical_recall"],
+            -item["wrong_queue_rate"],
+            item["auto_route_coverage"],
+        ))
     return {
         "status": "FEASIBLE_OPTIMAL" if feasible else "ROBUST_PARETO_FALLBACK",
         "selected_queue_threshold": round(best["queue_threshold"], 4),
@@ -275,6 +343,22 @@ def train_and_optimize(
     opt_slos = policy_cfg.get("optimization", {})
     taxonomy_cfg = get_taxonomy_config()
     taxonomy = TaxonomyResolver(taxonomy_cfg)
+    scope_model = None
+    scope_threshold = float(policy_cfg.get("ood_guard", {}).get("unsupported_threshold", 0.07))
+    scope_guard = ScopeGuard(unsupported_threshold=scope_threshold)
+    try:
+        scope_splits = load_scope_splits("data/evaluation/ood.jsonl")
+        unsupported_train = [str(item["text"]) for item in scope_splits["train"]]
+        scope_model = train_scope_classifier(
+            supported_texts=train_df["text"].tolist(),
+            unsupported_texts=unsupported_train,
+            seed=seed,
+        )
+        scope_guard.set_scope_classifier(scope_model)
+    except (FileNotFoundError, ValueError, KeyError) as exc:
+        LOGGER.warning("Không huấn luyện được scope classifier: %s", exc)
+
+    runtime_cfg = policy_cfg.get("runtime_thresholds", {})
     policy_opt = optimize_queue_policy_thresholds(
         probability_model=probability_model,
         val_texts=val_df["text"],
@@ -283,6 +367,10 @@ def train_and_optimize(
         target_wrong_queue_rate=float(opt_slos.get("target_wrong_queue_rate", 0.05)),
         target_critical_recall=float(opt_slos.get("target_critical_recall", 0.95)),
         min_coverage_floor=float(opt_slos.get("min_coverage_floor", 0.65)),
+        max_entropy=float(runtime_cfg.get("max_entropy", 3.80)),
+        scope_guard=scope_guard,
+        minimum_risk_signal=float(policy_cfg.get("critical_risk", {}).get("minimum_signal_probability", 0.16)),
+        minimum_ood_security_signal=float(policy_cfg.get("critical_risk", {}).get("minimum_ood_security_signal", 0.30)),
     )
 
     chosen_threshold = float(policy_opt["selected_queue_threshold"])
@@ -294,7 +382,7 @@ def train_and_optimize(
 
     config_payload = {
         "schema_version": 4,
-        "version": model_cfg.get("model_version", "banking77-router-v4"),
+        "version": model_cfg.get("model_version", "banking77-router-v5"),
         "policy_version": policy_cfg.get("policy_version", "queue-policy-v4"),
         "seed": seed,
         "benchmark": benchmark,
@@ -323,12 +411,21 @@ def train_and_optimize(
             "min_tokens": int(policy_cfg.get("ood_guard", {}).get("min_tokens", 2)),
             "low_confidence_threshold": float(policy_cfg.get("ood_guard", {}).get("low_confidence_ood_threshold", 0.22)),
             "lexical_novelty_threshold": float(policy_cfg.get("ood_guard", {}).get("lexical_similarity_threshold", 0.08)),
+            "unsupported_threshold": scope_threshold,
         },
         "auto_route": {
             "min_queue_probability": chosen_threshold,
-            "min_queue_margin": float(policy_cfg.get("runtime_thresholds", {}).get("min_margin", 0.02)),
+            "min_queue_margin": float(policy_opt["selected_queue_margin"]),
         },
-        "critical_risk": {"minimum_probability": chosen_risk_trigger},
+        "critical_risk": {
+            "minimum_probability": chosen_risk_trigger,
+            "minimum_signal_probability": float(policy_cfg.get("critical_risk", {}).get("minimum_signal_probability", 0.16)),
+            "minimum_ood_security_signal": float(policy_cfg.get("critical_risk", {}).get("minimum_ood_security_signal", 0.30)),
+        },
+        "scope_model": {
+            "version": getattr(scope_model, "model_version", None),
+            "unsupported_threshold": scope_threshold,
+        },
         "normalization_version": NORMALIZATION_VERSION,
     }
 
@@ -347,8 +444,9 @@ def train_and_optimize(
             "test": len(test_df),
         },
         pipeline_config=pipe_cfg,
-        model_version=str(model_cfg.get("model_version", "banking77-tfidf-char-lr-v4")),
-        policy_version=str(policy_cfg.get("policy_version", "queue-policy-v4")),
+        model_version=str(model_cfg.get("model_version", "banking77-tfidf-char-lr-v5")),
+        policy_version=str(policy_cfg.get("policy_version", "queue-policy-v5")),
+        scope_model=scope_model,
     )
 
     # 7. Save Validation Report

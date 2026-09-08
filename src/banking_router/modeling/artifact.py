@@ -19,16 +19,17 @@ from ..data.normalization import compute_file_sha256
 
 @dataclass
 class ModelBundle:
-    """Production Model Bundle containing weights, manifest, configuration, and policies."""
+    """Bundle bất biến gồm model intent, scope model và policy executable."""
     model: Any
     config: dict[str, Any]
     manifest: dict[str, Any]
     taxonomy: dict[str, Any]
     policy_config: dict[str, Any]
+    scope_model: Any | None = None
 
 
 def get_git_commit() -> str:
-    """Retrieve current Git commit hash for reproducibility metadata."""
+    """Lấy commit Git hiện tại để tái lập artifact."""
     try:
         res = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
@@ -42,7 +43,7 @@ def get_git_commit() -> str:
 
 
 def compute_string_sha256(text: str) -> str:
-    """Compute SHA-256 hash of a text string."""
+    """Tính SHA-256 cho chuỗi text."""
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
@@ -56,19 +57,25 @@ def save_bundle(
     test_dataset_sha256: str,
     split_sizes: dict[str, int],
     pipeline_config: dict[str, Any],
-    model_version: str = "banking77-tfidf-char-lr-v4",
-    policy_version: str = "queue-policy-v4",
+    model_version: str = "banking77-tfidf-char-lr-v5",
+    policy_version: str = "queue-policy-v5",
+    scope_model: Any | None = None,
 ) -> ModelBundle:
-    """Save full production ModelBundle and emit verified manifest with cryptographic hashes."""
+    """Lưu bundle và manifest có hash cho mọi artifact executable."""
     p_dir = Path(target_dir)
     p_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. Save binary model weights
+    # Lưu model intent.
     joblib_path = p_dir / "router.joblib"
     joblib.dump(calibrated_model, joblib_path)
     model_sha256 = compute_file_sha256(joblib_path)
+    scope_model_sha256: str | None = None
+    if scope_model is not None:
+        scope_path = p_dir / "scope_model.joblib"
+        joblib.dump(scope_model, scope_path)
+        scope_model_sha256 = compute_file_sha256(scope_path)
 
-    # 2. Hash class labels for consistency
+    # Hash nhãn để phát hiện model và taxonomy lệch nhau.
     classes = sorted(list(calibrated_model.classes_))
     labels_sha256 = compute_string_sha256(",".join(classes))
 
@@ -79,8 +86,7 @@ def save_bundle(
         "joblib": joblib.__version__,
     }
 
-    # Write canonical JSON artifacts first.  Legacy filenames are retained as
-    # read-only compatibility aliases for existing local deployments.
+    # File canonical; alias cũ chỉ để client offline còn đọc được.
     config_text = json.dumps(config_payload, indent=2, ensure_ascii=False)
     taxonomy_text = json.dumps(taxonomy_payload, indent=2, ensure_ascii=False)
     policy_text = json.dumps(policy_payload, indent=2, ensure_ascii=False)
@@ -90,14 +96,15 @@ def save_bundle(
     (p_dir / "routing_policy.json").write_text(policy_text, encoding="utf-8")
     (p_dir / "policy.json").write_text(policy_text, encoding="utf-8")
 
-    # 3. Model Manifest.  Policy and taxonomy are executable configuration, so
-    # they are protected by the same release integrity contract as the model.
+    # Policy và taxonomy là cấu hình executable nên phải được hash cùng model.
     artifact_hashes = {
         "model": model_sha256,
         "model_config": compute_file_sha256(p_dir / "model_config.json"),
         "taxonomy": compute_file_sha256(p_dir / "taxonomy.json"),
         "routing_policy": compute_file_sha256(p_dir / "routing_policy.json"),
     }
+    if scope_model_sha256:
+        artifact_hashes["scope_model"] = scope_model_sha256
     manifest_payload = {
         "schema_version": 4,
         "model_version": model_version,
@@ -114,6 +121,7 @@ def save_bundle(
         "pipeline_config": pipeline_config,
         "class_labels_count": len(classes),
         "normalization_version": "semantic-pii-v1",
+        "scope_model_version": getattr(scope_model, "model_version", None),
         "runtime": runtime_info,
     }
 
@@ -127,6 +135,7 @@ def save_bundle(
         manifest=manifest_payload,
         taxonomy=taxonomy_payload,
         policy_config=policy_payload,
+        scope_model=scope_model,
     )
 
 
@@ -134,7 +143,7 @@ def load_and_validate_bundle(
     models_dir: Path | str,
     verify_checksum: bool = True,
 ) -> ModelBundle:
-    """Load and strictly validate the ModelBundle contract.
+    """Load và xác thực nghiêm ngặt hợp đồng ModelBundle.
 
     Validation steps:
     1. Verify all expected artifact files exist.
@@ -177,8 +186,10 @@ def load_and_validate_bundle(
         if policy_path.exists()
         else {}
     )
+    scope_path = p_dir / "scope_model.joblib"
+    scope_model = joblib.load(scope_path) if scope_path.exists() else None
 
-    # 3. Checksum verification
+    # Xác minh checksum.
     if verify_checksum:
         expected_model_sha = manifest.get("artifact_hashes", {}).get(
             "model", manifest.get("artifact_sha256")
@@ -190,9 +201,7 @@ def load_and_validate_bundle(
                     f"Model artifact integrity check failed! Expected SHA256 {expected_model_sha}, got {current_sha256}"
                 )
 
-        # New manifests must lock every executable JSON artifact.  Older
-        # bundles remain loadable for offline migration, but production callers
-        # should regenerate them before promotion.
+        # Manifest mới khóa mọi artifact executable; bundle cũ chỉ để migrate offline.
         for artifact_name, expected_sha in manifest.get("artifact_hashes", {}).items():
             if artifact_name == "model":
                 continue
@@ -200,6 +209,7 @@ def load_and_validate_bundle(
                 "model_config": config_path,
                 "taxonomy": taxonomy_path,
                 "routing_policy": policy_path,
+                "scope_model": scope_path,
             }.get(artifact_name)
             if artifact_file is None or not artifact_file.exists():
                 raise FileNotFoundError(f"Missing integrity-protected artifact: {artifact_name}")
@@ -209,7 +219,7 @@ def load_and_validate_bundle(
                     f"{artifact_name} integrity check failed! Expected SHA256 {expected_sha}, got {current_sha}"
                 )
 
-    # 4. Load weights & verify 77 classes
+    # Load weights và xác minh đủ 77 class.
     model = joblib.load(joblib_path)
     classes = list(model.classes_)
     if len(classes) != 77:
@@ -232,4 +242,5 @@ def load_and_validate_bundle(
         manifest=manifest,
         taxonomy=taxonomy,
         policy_config=policy_config,
+        scope_model=scope_model,
     )

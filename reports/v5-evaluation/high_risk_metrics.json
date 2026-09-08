@@ -6,12 +6,11 @@
     "compromised_card",
     "direct_debit_payment_not_recognised",
     "lost_or_stolen_card",
-    "lost_or_stolen_phone",
-    "wrong_amount_of_cash_received"
+    "lost_or_stolen_phone"
   ],
-  "high_risk_trigger": 0.52,
-  "true_high_risk_count": 320,
-  "correctly_escalated": 294,
-  "escalation_recall": 0.9187,
-  "escalation_precision": 0.98
+  "high_risk_trigger": 0.1,
+  "true_high_risk_count": 280,
+  "correctly_escalated": 275,
+  "escalation_recall": 0.9821,
+  "escalation_precision": 0.8514
 }

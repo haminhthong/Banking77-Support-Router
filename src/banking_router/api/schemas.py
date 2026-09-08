@@ -66,6 +66,8 @@ class RiskResponse(BaseModel):
     high_risk_score: float
     critical_probability: float = 0.0
     ood_detected: bool
+    risk_category: str | None = None
+    risk_group_mass: dict[str, float] = Field(default_factory=dict)
 
 
 class ScopeResponse(BaseModel):
@@ -108,3 +110,4 @@ class FeedbackRequest(BaseModel):
     resolution: str = Field(default="reviewed", description="Kết quả xử lý review")
     reviewer_id: str = Field(default="human_agent", description="ID định danh chuyên viên xử lý")
     notes: str | None = Field(default=None, description="Ghi chú nghiệp vụ (được lọc PII tự động)")
+    reason_code: str | None = Field(default=None, description="Mã lý do review/correction")

@@ -1,0 +1,238 @@
+[
+  {
+    "true_intent": "top_up_failed",
+    "predicted_intent": "top_up_reverted",
+    "error_count": 7,
+    "avg_confidence": 0.7625,
+    "avg_margin": 0.5903,
+    "example_queries": [
+      "Why did the app deny my top up?",
+      "Why didn`t my topup go through?",
+      "Why would my topup not go through?"
+    ]
+  },
+  {
+    "true_intent": "why_verify_identity",
+    "predicted_intent": "unable_to_verify_identity",
+    "error_count": 5,
+    "avg_confidence": 0.6258,
+    "avg_margin": 0.3723,
+    "example_queries": [
+      "I'd rather not verify my identity.",
+      "I would like to not have to do the identity verification.",
+      "Since my id hasn't been verified, when can I use my account?"
+    ]
+  },
+  {
+    "true_intent": "fiat_currency_support",
+    "predicted_intent": "exchange_via_app",
+    "error_count": 4,
+    "avg_confidence": 0.722,
+    "avg_margin": 0.4823,
+    "example_queries": [
+      "How do I change currencies to euros?",
+      "Am I able to exchange currencies?",
+      "I want to make a currency exchange to EU."
+    ]
+  },
+  {
+    "true_intent": "card_payment_not_recognised",
+    "predicted_intent": "compromised_card",
+    "error_count": 4,
+    "avg_confidence": 0.6786,
+    "avg_margin": 0.5337,
+    "example_queries": [
+      "I think my statement has a fraudulent charge",
+      "What should I do to get transactions off of my account if I didn't make them? My card must have been compromised and I need to freeze it asap!",
+      "I see a charge on my account that I don't recall making. I feel like my account may have been compromised."
+    ]
+  },
+  {
+    "true_intent": "unable_to_verify_identity",
+    "predicted_intent": "verify_my_identity",
+    "error_count": 4,
+    "avg_confidence": 0.7561,
+    "avg_margin": 0.5571,
+    "example_queries": [
+      "I can't verify my identity.",
+      "What do i need to verify my id?",
+      "How do I show this stupid system that this is really my identity?"
+    ]
+  },
+  {
+    "true_intent": "change_pin",
+    "predicted_intent": "get_physical_card",
+    "error_count": 4,
+    "avg_confidence": 0.8054,
+    "avg_margin": 0.6849,
+    "example_queries": [
+      "I need a new Pin how do I go about that?",
+      "How do I update my PIN to a new number?",
+      "May I receive a different card pin"
+    ]
+  },
+  {
+    "true_intent": "balance_not_updated_after_bank_transfer",
+    "predicted_intent": "pending_transfer",
+    "error_count": 4,
+    "avg_confidence": 0.651,
+    "avg_margin": 0.3948,
+    "example_queries": [
+      "I made a transfer and am still waiting.",
+      "I made an out of country transfer and it hasn't went through yet.",
+      "How long until my transfer will be available to me"
+    ]
+  },
+  {
+    "true_intent": "card_arrival",
+    "predicted_intent": "card_delivery_estimate",
+    "error_count": 3,
+    "avg_confidence": 0.9305,
+    "avg_margin": 0.8739,
+    "example_queries": [
+      "When will I get my card?",
+      "How long does a card delivery take?",
+      "How do I know when my card will arrive?"
+    ]
+  },
+  {
+    "true_intent": "card_payment_wrong_exchange_rate",
+    "predicted_intent": "wrong_exchange_rate_for_cash_withdrawal",
+    "error_count": 3,
+    "avg_confidence": 0.5097,
+    "avg_margin": 0.2044,
+    "example_queries": [
+      "I made a currency exchange and think I was charged more than I should of been.",
+      "The exchange rate seems off on this transaction",
+      "How can I check the exchange rate applied to my transaction?"
+    ]
+  },
+  {
+    "true_intent": "pin_blocked",
+    "predicted_intent": "get_physical_card",
+    "error_count": 3,
+    "avg_confidence": 0.7298,
+    "avg_margin": 0.5722,
+    "example_queries": [
+      "Where can I view my PIN?",
+      "Will you reinstate my PIN?",
+      "Can I reactivate my PIN?"
+    ]
+  },
+  {
+    "true_intent": "card_acceptance",
+    "predicted_intent": "card_not_working",
+    "error_count": 3,
+    "avg_confidence": 0.5098,
+    "avg_margin": 0.3129,
+    "example_queries": [
+      "I am traveling to Germany, Will I be able to use my card there?",
+      "Where should my card work?",
+      "areas card is accpeted"
+    ]
+  },
+  {
+    "true_intent": "top_up_reverted",
+    "predicted_intent": "top_up_failed",
+    "error_count": 3,
+    "avg_confidence": 0.7353,
+    "avg_margin": 0.5179,
+    "example_queries": [
+      "The app wouldn't accept my top up.",
+      "I believe my money did not go through with my top up, was there a problem on your end?",
+      "On my last transaction it seem that my top-up was not successful."
+    ]
+  },
+  {
+    "true_intent": "unable_to_verify_identity",
+    "predicted_intent": "why_verify_identity",
+    "error_count": 3,
+    "avg_confidence": 0.5975,
+    "avg_margin": 0.2866,
+    "example_queries": [
+      "I cannot verify my identity",
+      "I do not have what is required to prove my identity",
+      "It is impossible to verify my identity"
+    ]
+  },
+  {
+    "true_intent": "disposable_card_limits",
+    "predicted_intent": "getting_virtual_card",
+    "error_count": 3,
+    "avg_confidence": 0.9317,
+    "avg_margin": 0.881,
+    "example_queries": [
+      "Do these virtual cards have any caps on using them?",
+      "Can you explain the virtual cards limit?",
+      "How many virtual cards do I get?"
+    ]
+  },
+  {
+    "true_intent": "Refund_not_showing_up",
+    "predicted_intent": "reverted_card_payment?",
+    "error_count": 3,
+    "avg_confidence": 0.3912,
+    "avg_margin": 0.1758,
+    "example_queries": [
+      "I bought something and returned it and the money from the return isn't in my account.",
+      "It's been a week and I have done everything that I was asked to do and still nothing. I have contacted the seller and have not gotten a response. Please understand my frustration and put the money back in my account.",
+      "I am waiting patiently for a week now for the seller to get back to me and there has been no response, could you please help me further with getting my money back. Thank you."
+    ]
+  },
+  {
+    "true_intent": "virtual_card_not_working",
+    "predicted_intent": "card_not_working",
+    "error_count": 3,
+    "avg_confidence": 0.7607,
+    "avg_margin": 0.5765,
+    "example_queries": [
+      "My non-physical card will not work",
+      "My card is just not working at this time.",
+      "My disposable card seems not to be working am I doing something wrong?"
+    ]
+  },
+  {
+    "true_intent": "extra_charge_on_statement",
+    "predicted_intent": "verify_source_of_funds",
+    "error_count": 2,
+    "avg_confidence": 0.8924,
+    "avg_margin": 0.8446,
+    "example_queries": [
+      "Where did this fee come from?",
+      "Where did this 1 euro fee come from?"
+    ]
+  },
+  {
+    "true_intent": "fiat_currency_support",
+    "predicted_intent": "supported_cards_and_currencies",
+    "error_count": 2,
+    "avg_confidence": 0.7058,
+    "avg_margin": 0.506,
+    "example_queries": [
+      "If I request that my funds be held, what currencies do you use?",
+      "Do you offer additional currency options?"
+    ]
+  },
+  {
+    "true_intent": "exchange_via_app",
+    "predicted_intent": "fiat_currency_support",
+    "error_count": 2,
+    "avg_confidence": 0.5965,
+    "avg_margin": 0.2192,
+    "example_queries": [
+      "What all currencies can be exchanged?",
+      "Can I change my currency from USD to EUR?"
+    ]
+  },
+  {
+    "true_intent": "pin_blocked",
+    "predicted_intent": "card_not_working",
+    "error_count": 2,
+    "avg_confidence": 0.7728,
+    "avg_margin": 0.5801,
+    "example_queries": [
+      "How do I reset my PIN, I can't seem to use my card?",
+      "What do I do if the bank machine won't accept my PIN attempts anymore?"
+    ]
+  }
+]

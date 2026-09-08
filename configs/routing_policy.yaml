@@ -1,13 +1,13 @@
 # Operational Routing Policy Configuration & Service Level Objectives (SLO)
 
-policy_version: "queue-policy-v4"
+policy_version: "queue-policy-v5"
 
-# Optimization SLOs for threshold selection on validation split
+# SLO dùng để chọn threshold trên validation split
 optimization:
   target_selective_risk: 0.05     # Maximum acceptable error rate in auto-routed tickets
-  target_high_risk_recall: 0.95   # Minimum recall for security priority escalations
+  target_high_risk_recall: 0.99   # Có biên an toàn trước khi chạy locked test
   target_wrong_queue_rate: 0.05
-  target_critical_recall: 0.95
+  target_critical_recall: 0.99
   min_coverage_target: 0.80       # Preferred auto-routing coverage
   min_coverage_floor: 0.65        # Absolute minimum acceptable coverage if constraints are tight
   threshold_candidates:
@@ -19,7 +19,7 @@ optimization:
     stop: 0.50
     steps: 46
 
-# Default tuned thresholds (overwritten by policy optimizer during training)
+# Threshold runtime mặc định; training ghi giá trị đã chọn vào bundle
 runtime_thresholds:
   reject_threshold: 0.45
   high_risk_trigger: 0.20
@@ -28,10 +28,22 @@ runtime_thresholds:
   min_queue_probability: 0.82
   min_queue_margin: 0.20
 
-# Out-of-Distribution (OOD) Guard parameters
+critical_risk:
+  minimum_signal_probability: 0.16
+  minimum_ood_security_signal: 0.30
+
+# Guard chất lượng input và scope
 ood_guard:
   enabled: true
   min_text_length_chars: 4
   min_tokens: 2
   lexical_similarity_threshold: 0.08
   low_confidence_ood_threshold: 0.22
+  unsupported_threshold: 0.07
+
+# Chỉ release đạt toàn bộ các ngưỡng này mới được promote
+release_gate:
+  max_wrong_queue_rate: 0.05
+  min_security_recall: 0.95
+  max_unsupported_auto_route_rate: 0.05
+  min_auto_route_coverage: 0.65

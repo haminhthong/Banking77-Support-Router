@@ -54,6 +54,7 @@ def record_human_feedback(
     resolution: str = "reviewed",
     reviewer_id: str = "human_agent",
     notes: str | None = None,
+    reason_code: str | None = None,
 ) -> dict[str, Any]:
     """Record human reviewer corrections for continuous quality tracking and future retraining."""
     path = Path(feedback_file)
@@ -70,6 +71,7 @@ def record_human_feedback(
         "is_correction": predicted_intent != reviewed_intent,
         "reviewer_id": reviewer_id,
         "notes": redact_pii(notes) if notes else None,
+        "reason_code": reason_code,
     }
 
     with open(path, "a", encoding="utf-8") as f:

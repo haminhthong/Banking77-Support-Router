@@ -26,6 +26,7 @@ class RoutingService:
         policy: RoutingPolicy,
         risk_assessor: RiskAssessor,
         ood_guard: OODGuard | None = None,
+        scope_model: Any | None = None,
         taxonomy: TaxonomyResolver | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
@@ -33,6 +34,7 @@ class RoutingService:
         self.policy = policy
         self.risk_assessor = risk_assessor
         self.ood_guard = ood_guard or OODGuard()
+        self.ood_guard.set_scope_classifier(scope_model)
         self.taxonomy = taxonomy or TaxonomyResolver()
         self.metadata = metadata or {}
         self.queue_projector = QueueProjector(self.model.classes_, self.taxonomy)

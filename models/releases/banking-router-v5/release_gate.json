@@ -1,0 +1,31 @@
+{
+  "status": "PASSED",
+  "passed": true,
+  "checked_at": "2026-09-07T21:27:33.290862+00:00",
+  "checks": {
+    "wrong_queue_rate": {
+      "value": 0.0051,
+      "operator": "<=",
+      "limit": 0.05,
+      "passed": true
+    },
+    "security_recall": {
+      "value": 0.9821,
+      "operator": ">=",
+      "limit": 0.95,
+      "passed": true
+    },
+    "unsupported_auto_route_rate": {
+      "value": 0.0,
+      "operator": "<=",
+      "limit": 0.05,
+      "passed": true
+    },
+    "auto_route_coverage": {
+      "value": 0.6981,
+      "operator": ">=",
+      "limit": 0.65,
+      "passed": true
+    }
+  }
+}

@@ -6,13 +6,15 @@ import json
 from pathlib import Path
 from typing import Any
 from ..routing.service import RoutingService
+from ..data.scope import load_scope_splits
 
 
 def evaluate_ood_benchmark(
     ood_file: Path | str,
     routing_service: RoutingService,
+    split: str = "all",
 ) -> dict[str, Any]:
-    """Evaluate Out-of-Distribution detection performance on dedicated out-of-scope dataset."""
+    """Đánh giá scope; mặc định dùng locked set không được dùng để tune."""
     path = Path(ood_file)
     if not path.exists():
         return {
@@ -20,12 +22,15 @@ def evaluate_ood_benchmark(
             "reason": f"OOD evaluation dataset not found at {path}",
         }
 
-    records = []
-    with open(path, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                records.append(json.loads(line))
+    if split == "all":
+        records = []
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    records.append(json.loads(line))
+    else:
+        records = load_scope_splits(path).get(split, [])
 
     if not records:
         return {"ood_evaluated": False, "reason": "Empty OOD evaluation dataset"}
@@ -64,6 +69,7 @@ def evaluate_ood_benchmark(
 
     return {
         "ood_evaluated": True,
+        "scope_split": split,
         "ood_total_samples": total_samples,
         "ood_detected_count": ood_detected_count,
         "ood_recall": round(ood_recall, 4),
