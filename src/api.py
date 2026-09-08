@@ -177,7 +177,10 @@ def predict_batch(batch: BatchQuery) -> dict[str, Any]:
 
     service = get_routing_service()
     texts = [q.text for q in batch.queries]
-    res_list = service.route_batch(texts, top_k=batch.queries[0].top_k if batch.queries else 3)
+    res_list = service.route_batch(
+        texts,
+        top_ks=[query.top_k for query in batch.queries],
+    )
     results = [
         {
             "decision": r.decision.decision,

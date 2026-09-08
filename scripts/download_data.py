@@ -7,10 +7,11 @@ from pathlib import Path
 
 import requests
 
-PINNED_COMMIT = "master"
+# Nguồn hiện hành; checksum bên dưới mới là điều kiện chấp nhận dữ liệu.
+SOURCE_REF = "master"
 URLS = {
-    "train.csv": f"https://raw.githubusercontent.com/PolyAI-LDN/task-specific-datasets/{PINNED_COMMIT}/banking_data/train.csv",
-    "test.csv": f"https://raw.githubusercontent.com/PolyAI-LDN/task-specific-datasets/{PINNED_COMMIT}/banking_data/test.csv",
+    "train.csv": f"https://raw.githubusercontent.com/PolyAI-LDN/task-specific-datasets/{SOURCE_REF}/banking_data/train.csv",
+    "test.csv": f"https://raw.githubusercontent.com/PolyAI-LDN/task-specific-datasets/{SOURCE_REF}/banking_data/test.csv",
 }
 
 EXPECTED_SHA256 = {
@@ -33,11 +34,13 @@ def main() -> None:
         r.raise_for_status()
         content = r.content
         computed_sha = compute_sha256(content)
-        (out / name).write_bytes(content)
-        print(f"Downloaded {name}: {len(content):,} bytes | SHA256: {computed_sha}")
         expected = EXPECTED_SHA256.get(name)
         if expected and computed_sha != expected:
-            print(f"CẢNH BÁO: Checksum của {name} không khớp với bản gốc đã kiểm thử!")
+            raise ValueError(
+                f"Checksum {name} không khớp: expected={expected}, actual={computed_sha}"
+            )
+        (out / name).write_bytes(content)
+        print(f"Đã tải {name}: {len(content):,} bytes | SHA256: {computed_sha}")
 
 
 if __name__ == "__main__":

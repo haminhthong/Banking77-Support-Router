@@ -10,7 +10,6 @@ import numpy as np
 
 from src.banking_router.modeling.training import (
     calculate_ece,
-    optimize_policy_thresholds,
     train_and_optimize,
 )
 from src.banking_router.utils import set_seed, setup_logging
@@ -51,9 +50,24 @@ def main() -> None:
         default="official",
         help="Chọn chuẩn đánh giá: official (chuẩn công bố) hoặc strict_decontaminated (khử trùng lặp tuyệt đối)",
     )
+    parser.add_argument(
+        "--models-dir",
+        default="models/releases/banking-router-v6",
+        help="Thư mục release candidate, không tự động đổi production pointer",
+    )
+    parser.add_argument(
+        "--reports-dir",
+        default="reports/v6-training",
+        help="Thư mục lưu validation report của candidate",
+    )
     args = parser.parse_args()
 
-    train_and_optimize(seed=42, benchmark=args.benchmark)
+    train_and_optimize(
+        seed=42,
+        benchmark=args.benchmark,
+        models_dir=args.models_dir,
+        reports_dir=args.reports_dir,
+    )
 
 
 if __name__ == "__main__":

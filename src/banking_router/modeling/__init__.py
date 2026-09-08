@@ -8,7 +8,7 @@ from .calibration import (
     select_probability_model,
 )
 from .pipeline import build_pipeline
-from .training import calculate_ece, calculate_entropy, optimize_policy_thresholds, train_and_optimize
+from .training import calculate_ece, calculate_entropy, train_and_optimize
 
 __all__ = [
     "build_pipeline",
@@ -21,6 +21,5 @@ __all__ = [
     "load_and_validate_bundle",
     "calculate_ece",
     "calculate_entropy",
-    "optimize_policy_thresholds",
     "train_and_optimize",
 ]

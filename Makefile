@@ -11,7 +11,7 @@ evaluate:
 	python -m src.evaluate
 
 serve:
-	uvicorn src.api:app --host 0.0.0.0 --port 8000
+	uvicorn src.banking_router.api.app:app --host 0.0.0.0 --port 8000
 
 test:
 	pytest -q

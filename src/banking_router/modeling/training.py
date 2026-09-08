@@ -13,7 +13,7 @@ from .artifact import save_bundle
 from .calibration import fit_temperature, select_probability_model
 from .pipeline import build_pipeline
 from ..config import get_model_config, get_routing_policy_config, get_taxonomy_config
-from ..data import DEFAULT_HIGH_RISK_INTENTS, compute_file_sha256, get_domain_for_intent, load_training_splits, summarize_split_quality
+from ..data import compute_file_sha256, get_domain_for_intent, load_training_splits, summarize_split_quality
 from ..data.scope import load_scope_splits
 from .scope import train_scope_classifier
 from ..routing.ood import ScopeGuard
@@ -184,112 +184,6 @@ def calculate_entropy(probabilities: np.ndarray, eps: float = 1e-12) -> np.ndarr
     return -np.sum(p * np.log(p), axis=1)
 
 
-def optimize_policy_thresholds(
-    calibrated_model: Any,
-    val_texts: pd.Series,
-    val_targets: np.ndarray,
-    target_selective_risk: float = 0.05,
-    target_high_risk_recall: float = 0.95,
-    min_coverage_floor: float = 0.65,
-    high_risk_intents: frozenset[str] = DEFAULT_HIGH_RISK_INTENTS,
-) -> dict[str, Any]:
-    """Jointly optimize reject threshold and high-risk trigger on threshold validation data.
-
-    Optimization Objective:
-        MAXIMIZE auto_route_coverage
-        SUBJECT TO:
-            auto_route_error <= target_selective_risk
-            high_risk_recall >= target_high_risk_recall
-            coverage >= min_coverage_floor
-    """
-    proba = calibrated_model.predict_proba(val_texts)
-    classes = calibrated_model.classes_
-    class_to_idx = {c: i for i, c in enumerate(classes)}
-
-    ranked_indices = proba.argsort(axis=1)[:, ::-1]
-    top_preds = classes[ranked_indices[:, 0]]
-    confidences = proba[np.arange(len(proba)), ranked_indices[:, 0]]
-    margins = confidences - proba[np.arange(len(proba)), ranked_indices[:, 1]]
-    entropies = calculate_entropy(proba)
-
-    # Risk signals for validation samples
-    risk_indices = [class_to_idx[c] for c in high_risk_intents if c in class_to_idx]
-    max_risk_scores = np.max(proba[:, risk_indices], axis=1) if risk_indices else np.zeros(len(proba))
-    is_true_high_risk = np.isin(val_targets, list(high_risk_intents))
-    true_high_risk_count = int(is_true_high_risk.sum())
-
-    threshold_candidates = np.linspace(0.20, 0.90, 71)
-    risk_trigger_candidates = np.linspace(0.05, 0.45, 41)
-
-    feasible_results: list[dict[str, Any]] = []
-    all_evaluated: list[dict[str, Any]] = []
-
-    for r_thresh in threshold_candidates:
-        for risk_trig in risk_trigger_candidates:
-            # Policy decision simulation:
-            # 1. High risk escalation if top_intent in high_risk OR max_risk_scores >= risk_trig
-            escalated_mask = np.isin(top_preds, list(high_risk_intents)) | (max_risk_scores >= risk_trig)
-            # 2. Uncertainty abstain if not escalated and conf < r_thresh
-            abstained_mask = (~escalated_mask) & (confidences < r_thresh)
-            # 3. Auto route
-            auto_routed_mask = (~escalated_mask) & (~abstained_mask)
-
-            # Metrics
-            auto_coverage = float(auto_routed_mask.mean())
-            auto_error = (
-                float(1.0 - (top_preds[auto_routed_mask] == val_targets[auto_routed_mask]).mean())
-                if auto_routed_mask.any()
-                else 0.0
-            )
-
-            hr_caught = int((is_true_high_risk & escalated_mask).sum())
-            hr_recall = float(hr_caught / true_high_risk_count) if true_high_risk_count > 0 else 1.0
-
-            cand_info = {
-                "reject_threshold": float(r_thresh),
-                "high_risk_trigger": float(risk_trig),
-                "auto_coverage": auto_coverage,
-                "auto_error": auto_error,
-                "high_risk_recall": hr_recall,
-            }
-            all_evaluated.append(cand_info)
-
-            if (
-                auto_error <= target_selective_risk
-                and hr_recall >= target_high_risk_recall
-                and auto_coverage >= min_coverage_floor
-            ):
-                feasible_results.append(cand_info)
-
-    if feasible_results:
-        # Maximize coverage, then minimize error
-        best = max(feasible_results, key=lambda x: (x["auto_coverage"], -x["auto_error"]))
-        status = "FEASIBLE_OPTIMAL"
-    else:
-        LOGGER.warning(
-            "NO FEASIBLE POLICY meeting strict SLO (risk <= %.2f, recall >= %.2f). Selecting robust Pareto point.",
-            target_selective_risk,
-            target_high_risk_recall,
-        )
-        # Select best tradeoff: prioritize recall >= 0.90, then minimum error
-        viable = [x for x in all_evaluated if x["high_risk_recall"] >= 0.90 and x["auto_coverage"] >= 0.70]
-        if viable:
-            best = min(viable, key=lambda x: (x["auto_error"], -x["auto_coverage"]))
-        else:
-            best = {"reject_threshold": 0.45, "high_risk_trigger": 0.20, "auto_coverage": 0.80, "auto_error": 0.06, "high_risk_recall": 0.92}
-        status = "ROBUST_PARETO_FALLBACK"
-
-    return {
-        "status": status,
-        "selected_reject_threshold": round(best["reject_threshold"], 4),
-        "selected_high_risk_trigger": round(best["high_risk_trigger"], 4),
-        "val_auto_coverage": round(best["auto_coverage"], 4),
-        "val_auto_error": round(best["auto_error"], 4),
-        "val_high_risk_recall": round(best["high_risk_recall"], 4),
-        "feasible_candidate_count": len(feasible_results),
-    }
-
-
 def train_and_optimize(
     seed: int = 42,
     benchmark: str = "official",
@@ -383,7 +277,7 @@ def train_and_optimize(
     config_payload = {
         "schema_version": 4,
         "version": model_cfg.get("model_version", "banking77-router-v5"),
-        "policy_version": policy_cfg.get("policy_version", "queue-policy-v4"),
+        "policy_version": policy_cfg.get("policy_version", "queue-policy-v5"),
         "seed": seed,
         "benchmark": benchmark,
         "queue_threshold": chosen_threshold,
@@ -405,7 +299,7 @@ def train_and_optimize(
     }
 
     policy_payload = {
-        "policy_version": policy_cfg.get("policy_version", "queue-policy-v4"),
+        "policy_version": policy_cfg.get("policy_version", "queue-policy-v5"),
         "scope": {
             "min_chars": int(policy_cfg.get("ood_guard", {}).get("min_text_length_chars", 4)),
             "min_tokens": int(policy_cfg.get("ood_guard", {}).get("min_tokens", 2)),

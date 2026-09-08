@@ -1,13 +1,14 @@
 __pycache__/
-reports/*.sqlite3
+**/__pycache__/
 *.py[cod]
 .venv/
-.env
 .pytest_cache/
 .pytest_tmp/
+reports/*.sqlite3
+reports/*.jsonl
+.env
 scratch/
 mlruns/
 data/raw/*
 data/processed/*
 models/*.joblib
-reports/*.jsonl

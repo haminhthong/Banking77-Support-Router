@@ -144,17 +144,20 @@ class RoutingService:
         self,
         texts: list[str],
         top_k: int = 3,
+        top_ks: Sequence[int] | None = None,
     ) -> list[RoutingResult]:
         """Vectorized batch routing for high-throughput batch ticket pipelines."""
         if not texts:
             return []
+        if top_ks is not None and len(top_ks) != len(texts):
+            raise ValueError("top_ks must have the same length as texts")
 
         classes = self.model.classes_
         normalized_texts = [normalize_pii_semantically(text) for text in texts]
         proba_matrix = self.model.predict_proba(normalized_texts)
         results: list[RoutingResult] = []
 
-        for i, text in enumerate(texts):
+        for i, model_text in enumerate(normalized_texts):
             proba = proba_matrix[i]
             ranked_indices = proba.argsort()[::-1]
 
@@ -170,7 +173,7 @@ class RoutingService:
             queue_prediction = self.queue_projector.project(proba)
 
             ood_detected, ood_reasons = self.ood_guard.detect(
-                text=normalize_pii_semantically(text),
+                text=model_text,
                 confidence=raw_conf,
                 margin=raw_margin,
             )
@@ -182,7 +185,8 @@ class RoutingService:
                 ood_reasons=ood_reasons,
             )
 
-            safe_top_k = max(1, min(top_k, len(classes)))
+            requested_top_k = top_ks[i] if top_ks is not None else top_k
+            safe_top_k = max(1, min(int(requested_top_k), len(classes)))
             alternatives = [
                 {
                     "intent": str(classes[idx]),

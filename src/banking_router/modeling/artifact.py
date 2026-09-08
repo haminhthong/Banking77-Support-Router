@@ -12,6 +12,8 @@ from typing import Any
 import joblib
 import numpy as np
 import sklearn
+from sklearn.base import BaseEstimator
+from sklearn.linear_model import LogisticRegression
 
 from ..data.contracts import BANKING77_77_CLASSES
 from ..data.normalization import compute_file_sha256
@@ -26,6 +28,39 @@ class ModelBundle:
     taxonomy: dict[str, Any]
     policy_config: dict[str, Any]
     scope_model: Any | None = None
+
+
+def _restore_sklearn_compatibility(root: Any) -> None:
+    """Bổ sung thuộc tính bị thiếu khi load artifact giữa minor version sklearn."""
+    pending = [root]
+    visited: set[int] = set()
+
+    def enqueue(value: Any) -> None:
+        if isinstance(value, BaseEstimator) or (
+            hasattr(value, "__dict__")
+            and value.__class__.__module__.startswith("sklearn")
+        ):
+            pending.append(value)
+        elif isinstance(value, (list, tuple, set)):
+            for item in value:
+                enqueue(item)
+        elif isinstance(value, dict):
+            for item in value.values():
+                enqueue(item)
+
+    while pending:
+        current = pending.pop()
+        current_id = id(current)
+        if current_id in visited:
+            continue
+        visited.add(current_id)
+
+        if isinstance(current, LogisticRegression) and not hasattr(current, "multi_class"):
+            current.multi_class = "auto"
+
+        if isinstance(current, BaseEstimator) or hasattr(current, "__dict__"):
+            for value in vars(current).values():
+                enqueue(value)
 
 
 def get_git_commit() -> str:
@@ -221,6 +256,9 @@ def load_and_validate_bundle(
 
     # Load weights và xác minh đủ 77 class.
     model = joblib.load(joblib_path)
+    _restore_sklearn_compatibility(model)
+    if scope_model is not None:
+        _restore_sklearn_compatibility(scope_model)
     classes = list(model.classes_)
     if len(classes) != 77:
         raise ValueError(

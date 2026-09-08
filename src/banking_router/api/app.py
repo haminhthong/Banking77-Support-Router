@@ -6,8 +6,7 @@ import json
 import time
 from pathlib import Path
 from typing import Any
-from fastapi import FastAPI, HTTPException, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from .schemas import (
@@ -255,7 +254,10 @@ def route_batch(batch: BatchRouteRequest) -> dict[str, Any]:
     """Process high-volume ticket batches using vectorized matrix inference."""
     service = get_routing_service()
     texts = [t.text for t in batch.tickets]
-    results = service.route_batch(texts, top_k=batch.tickets[0].top_k if batch.tickets else 3)
+    results = service.route_batch(
+        texts,
+        top_ks=[ticket.top_k for ticket in batch.tickets],
+    )
 
     decision_counts: dict[str, int] = {}
     response_items = []
