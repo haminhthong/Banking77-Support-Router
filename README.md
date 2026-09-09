@@ -150,6 +150,7 @@ Banking77-Support-Router/
 │   └── v5-evaluation/            # test, OOD, safety và calibration report
 ├── scripts/
 │   ├── download_data.py           # tải và kiểm checksum dataset
+│   ├── prepare_ci.py              # chuẩn bị dataset/model cho checkout sạch
 │   ├── promote_release.py         # evaluate gate rồi mới promote
 │   └── manual_api_test.py         # smoke test thủ công
 ├── src/
@@ -367,7 +368,7 @@ python scripts/manual_api_test.py
 
 ## CI
 
-Workflow `.github/workflows/ci.yml` chạy trên GitHub Actions cho `push` vào `main`/`master`, pull request và chạy thủ công. Pipeline cố định Python 3.11, cài từ `requirements.txt`, compile `src`, `scripts`, `tests`, sau đó chạy toàn bộ pytest với `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` để kết quả không bị ảnh hưởng bởi plugin ngoài dependency của dự án.
+Workflow `.github/workflows/ci.yml` chạy trên GitHub Actions cho `push` vào `main`/`master`, pull request và chạy thủ công. Pipeline cố định Python 3.11, cài từ `requirements.txt`, chạy `scripts/prepare_ci.py` để tải dataset nếu checkout sạch chưa có CSV và dùng release v5; nếu release không có thì train một candidate CI, tạo production pointer tạm thời và đồng bộ alias `models/` cho test legacy. Sau đó CI compile `src`, `scripts`, `tests` và chạy toàn bộ pytest với `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` để kết quả không bị ảnh hưởng bởi plugin ngoài dependency của dự án.
 
 ## Làm sạch và nguyên tắc đóng góp
 
