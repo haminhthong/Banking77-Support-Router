@@ -6,17 +6,19 @@ from fastapi.testclient import TestClient
 import pytest
 
 from src.banking_router.api.app import app
+from src.banking_router.config import resolve_models_dir
 from src.banking_router.data.contracts import BANKING77_77_CLASSES
 from src.banking_router.data.normalization import compute_file_sha256
 from src.banking_router.modeling.artifact import load_and_validate_bundle
 from src.banking_router.routing.service import RoutingService
 
 client = TestClient(app)
+MODEL_RELEASE_DIR = resolve_models_dir("models")
 
 
 def test_model_classes_match_taxonomy():
     """INVARIANT: Model classes must match the 77-class taxonomy exactly."""
-    bundle = load_and_validate_bundle("models", verify_checksum=False)
+    bundle = load_and_validate_bundle(MODEL_RELEASE_DIR, verify_checksum=True)
     classes = list(bundle.model.classes_)
     assert len(classes) == 77
     assert set(classes) == set(BANKING77_77_CLASSES)
@@ -24,15 +26,15 @@ def test_model_classes_match_taxonomy():
 
 def test_model_artifact_matches_manifest():
     """INVARIANT: Artifact binary SHA-256 must match the value recorded in model_manifest.json."""
-    manifest = json.loads(Path("models/model_manifest.json").read_text(encoding="utf-8"))
+    manifest = json.loads((MODEL_RELEASE_DIR / "manifest.json").read_text(encoding="utf-8"))
     recorded_sha = manifest["artifact_sha256"]
-    actual_sha = compute_file_sha256("models/router.joblib")
+    actual_sha = compute_file_sha256(MODEL_RELEASE_DIR / "router.joblib")
     assert recorded_sha == actual_sha
 
 
 def test_batch_and_single_prediction_equivalent():
     """INVARIANT: Vectorized batch routing must return identical predictions to sequential single routing."""
-    bundle = load_and_validate_bundle("models", verify_checksum=False)
+    bundle = load_and_validate_bundle(MODEL_RELEASE_DIR, verify_checksum=True)
     from src.banking_router.routing.policy import RoutingPolicy
     from src.banking_router.routing.risk import RiskAssessor
     from src.banking_router.routing.ood import OODGuard

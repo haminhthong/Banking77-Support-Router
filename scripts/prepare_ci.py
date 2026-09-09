@@ -1,10 +1,9 @@
-"""Chuẩn bị dataset và model facade cho CI trên checkout sạch."""
+"""Chuẩn bị dataset và model fixture cho CI trên checkout sạch."""
 
 from __future__ import annotations
 
 import json
 import os
-import shutil
 import sys
 from pathlib import Path
 
@@ -20,21 +19,34 @@ MODELS_DIR = ROOT / "models"
 RELEASE_NAME = "banking-router-v5"
 CI_RELEASE_NAME = "banking-router-ci"
 
-BUNDLE_FILES = (
-    "router.joblib",
-    "scope_model.joblib",
-    "manifest.json",
-    "model_manifest.json",
-    "model_config.json",
-    "config.json",
-    "taxonomy.json",
-    "routing_policy.json",
-    "policy.json",
-)
-
 
 def _has_bundle(release_dir: Path) -> bool:
-    return all((release_dir / name).exists() for name in ("router.joblib", "manifest.json", "model_config.json"))
+    required_files = ("router.joblib", "manifest.json", "model_config.json")
+    if not all((release_dir / name).exists() for name in required_files):
+        return False
+
+    try:
+        manifest_path = release_dir / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+
+    artifact_files = {
+        "model": "router.joblib",
+        "model_config": "model_config.json",
+        "taxonomy": "taxonomy.json",
+        "routing_policy": "routing_policy.json",
+        "scope_model": "scope_model.joblib",
+    }
+    protected_artifacts = manifest.get("artifact_hashes", {})
+    if not isinstance(protected_artifacts, dict):
+        return False
+    if any(name not in artifact_files for name in protected_artifacts):
+        return False
+    return all(
+        (release_dir / artifact_files[name]).exists()
+        for name in protected_artifacts
+    )
 
 
 def _ensure_dataset() -> None:
@@ -77,25 +89,11 @@ def _ensure_release() -> Path:
     return ci_release_dir
 
 
-def _create_legacy_model_view(release_dir: Path) -> None:
-    """Đồng bộ alias models/ cho các test/client legacy còn đọc đường dẫn cũ."""
-    MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    required = ("router.joblib", "model_manifest.json", "model_config.json")
-    if all((MODELS_DIR / name).exists() for name in required):
-        print("Using existing legacy model view")
-        return
-    for name in BUNDLE_FILES:
-        source = release_dir / name
-        if source.exists():
-            shutil.copy2(source, MODELS_DIR / name)
-
-
 def main() -> None:
     os.chdir(ROOT)
     _ensure_dataset()
     release_dir = _ensure_release()
     load_and_validate_bundle(release_dir, verify_checksum=True)
-    _create_legacy_model_view(release_dir)
     print(f"CI fixtures ready: {release_dir}")
 
 
