@@ -6,11 +6,10 @@ import pandas as pd
 from src.banking_router.data import (
     BANKING77_77_CLASSES,
     INTENT_TO_DOMAIN,
-    read_raw_dataset,
     audit_conflicting_labels,
-    audit_normalized_duplicates,
     get_domain_for_intent,
     load_training_splits,
+    read_raw_dataset,
     summarize_split_quality,
 )
 
@@ -36,9 +35,9 @@ def test_exact_77_intent_to_domain_taxonomy_complete():
     """Bắt buộc đủ 77 intent BANKING77 trong bảng taxonomy khi chạy CI."""
     assert len(BANKING77_77_CLASSES) == 77
     assert len(INTENT_TO_DOMAIN) == 77
-    assert set(INTENT_TO_DOMAIN.keys()) == set(
-        BANKING77_77_CLASSES
-    ), "Taxonomy không khớp hoàn toàn với danh sách 77 nhãn chuẩn!"
+    assert set(INTENT_TO_DOMAIN.keys()) == set(BANKING77_77_CLASSES), (
+        "Taxonomy không khớp hoàn toàn với danh sách 77 nhãn chuẩn!"
+    )
 
 
 def test_get_domain_for_real_banking77_intents():
@@ -74,9 +73,7 @@ def test_split_quality_detects_pairwise_text_overlap():
 def test_training_splits_have_distinct_roles_and_pairwise_disjoint():
     """Tất cả các split train, calibration, threshold-validation phải hoàn toàn độc lập."""
     train, calibration, threshold_validation, test = load_training_splits()
-    sets = [
-        set(frame["text"]) for frame in (train, calibration, threshold_validation)
-    ]
+    sets = [set(frame["text"]) for frame in (train, calibration, threshold_validation)]
     assert sets[0].isdisjoint(sets[1])
     assert sets[0].isdisjoint(sets[2])
     assert sets[1].isdisjoint(sets[2])
@@ -88,7 +85,11 @@ def test_audit_conflicting_labels():
     df = pd.DataFrame(
         {
             "text": ["Where is my card?", "Where is my card?", "Transfer money"],
-            "intent": ["card_arrival", "card_delivery_estimate", "transfer_into_account"],
+            "intent": [
+                "card_arrival",
+                "card_delivery_estimate",
+                "transfer_into_account",
+            ],
         }
     )
     conflicts = audit_conflicting_labels(df)

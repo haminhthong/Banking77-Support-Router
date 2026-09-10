@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import time
 import uuid
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 
 from ..data.normalization import normalize_pii_semantically
+from ..evaluation.metrics import entropy
 from .escalation import SensitiveIntentGuard
 from .policy import RoutingPolicy
 from .queue_projector import QueueProjector
@@ -44,7 +46,9 @@ class RoutingService:
         model = self.model
         if hasattr(model, "estimator"):
             model = model.estimator
-        elif hasattr(model, "calibrated_classifiers_") and model.calibrated_classifiers_:
+        elif (
+            hasattr(model, "calibrated_classifiers_") and model.calibrated_classifiers_
+        ):
             model = model.calibrated_classifiers_[0].estimator
         if hasattr(model, "estimator"):
             model = model.estimator
@@ -60,21 +64,24 @@ class RoutingService:
         if tfidf is not None and hasattr(tfidf, "vocabulary_"):
             self.scope_guard.set_vocabulary(set(tfidf.vocabulary_))
 
-    @staticmethod
-    def _entropy(probabilities: np.ndarray, eps: float = 1e-12) -> float:
-        values = np.clip(probabilities, eps, 1.0)
-        return float(-np.sum(values * np.log(values)))
-
-    def _route_one(self, text: str, probabilities: np.ndarray, top_k: int, request_id: str) -> RoutingResult:
+    def _route_one(
+        self, text: str, probabilities: np.ndarray, top_k: int, request_id: str
+    ) -> RoutingResult:
         classes = self.model.classes_
         ranked_indices = probabilities.argsort()[::-1]
         top_intent = str(classes[ranked_indices[0]])
         confidence = float(probabilities[ranked_indices[0]])
-        margin = float(probabilities[ranked_indices[0]] - probabilities[ranked_indices[1]]) if len(ranked_indices) > 1 else 1.0
-        entropy = self._entropy(probabilities)
+        margin = (
+            float(probabilities[ranked_indices[0]] - probabilities[ranked_indices[1]])
+            if len(ranked_indices) > 1
+            else 1.0
+        )
+        intent_entropy = float(entropy(probabilities))
         queue_prediction = self.queue_projector.project(probabilities)
-        scope_detected, scope_reasons = self.scope_guard.detect(text, confidence, margin)
-        sensitive_case = self.sensitive_guard.assess(probabilities, scope_detected, scope_reasons)
+        scope_detected, scope_reasons = self.scope_guard.detect(text, confidence)
+        sensitive_case = self.sensitive_guard.assess(
+            probabilities, scope_detected, scope_reasons
+        )
         safe_top_k = max(1, min(int(top_k), len(classes)))
         alternatives = [
             {
@@ -89,7 +96,7 @@ class RoutingService:
             domain=self.taxonomy.get_domain(top_intent),
             confidence=round(confidence, 4),
             margin=round(margin, 4),
-            entropy=round(entropy, 4),
+            entropy=round(intent_entropy, 4),
             alternatives=alternatives,
         )
         decision = self.policy.evaluate(
@@ -110,21 +117,36 @@ class RoutingService:
             metadata=dict(self.metadata),
         )
 
-    def route(self, text: str, top_k: int = 3, request_id: str | None = None) -> RoutingResult:
+    def route(
+        self, text: str, top_k: int = 3, request_id: str | None = None
+    ) -> RoutingResult:
         """Route một ticket sau khi áp dụng cùng chuẩn hóa như lúc train."""
         started = time.perf_counter()
         normalized = normalize_pii_semantically(text)
         probabilities = self.model.predict_proba([normalized])[0]
-        result = self._route_one(normalized, probabilities, top_k, request_id or f"req_{uuid.uuid4().hex[:12]}")
+        result = self._route_one(
+            normalized,
+            probabilities,
+            top_k,
+            request_id or f"req_{uuid.uuid4().hex[:12]}",
+        )
         result.metadata["latency_ms"] = round((time.perf_counter() - started) * 1000, 3)
         return result
 
-    def route_batch(self, texts: list[str], top_k: int = 3, top_ks: Sequence[int] | None = None) -> list[RoutingResult]:
+    def route_batch(
+        self,
+        texts: list[str],
+        top_k: int = 3,
+        top_ks: Sequence[int] | None = None,
+        request_ids: Sequence[str | None] | None = None,
+    ) -> list[RoutingResult]:
         """Route nhiều ticket bằng một lần gọi predict_proba."""
         if not texts:
             return []
         if top_ks is not None and len(top_ks) != len(texts):
             raise ValueError("top_ks phải có cùng số phần tử với texts")
+        if request_ids is not None and len(request_ids) != len(texts):
+            raise ValueError("request_ids phải có cùng số phần tử với texts")
         normalized = [normalize_pii_semantically(text) for text in texts]
         probabilities = self.model.predict_proba(normalized)
         return [
@@ -132,7 +154,8 @@ class RoutingService:
                 text,
                 probabilities[index],
                 top_ks[index] if top_ks is not None else top_k,
-                f"req_{uuid.uuid4().hex[:12]}",
+                (request_ids[index] if request_ids is not None else None)
+                or f"req_{uuid.uuid4().hex[:12]}",
             )
             for index, text in enumerate(normalized)
         ]

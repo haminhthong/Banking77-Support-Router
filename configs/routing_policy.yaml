@@ -1,23 +1,11 @@
-# Mục tiêu thực nghiệm dùng để chọn threshold trên validation split.
+# Mục tiêu thực nghiệm và các kiểm tra cố định cho validation split.
 # Đây không phải SLA của ngân hàng.
 optimization:
-  target_selective_risk: 0.05
-  target_sensitive_case_recall: 0.99
+  target_sensitive_case_recall: 0.95
   target_wrong_queue_rate: 0.05
   min_coverage_floor: 0.65
-  threshold_candidates:
-    start: 0.20
-    stop: 0.95
-    steps: 76
-  sensitive_threshold_candidates:
-    start: 0.05
-    stop: 0.50
-    steps: 46
 
-runtime_thresholds:
-  queue_probability: 0.82
-  queue_margin: 0.20
-  sensitive_probability: 0.20
+fixed_checks:
   min_margin: 0.02
   max_entropy: 3.80
 

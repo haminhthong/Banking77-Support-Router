@@ -1,6 +1,4 @@
-# Cấu hình classifier và pipeline hiệu chuẩn.
-
-seed: 42
+# Cấu hình classifier và pipeline đặc trưng.
 
 features:
   word:
@@ -17,15 +15,10 @@ features:
     max_features: 25000
 
 classifier:
-  type: "logistic_regression"
+  type: logistic_regression
   params:
     C: 4.0
     max_iter: 1200
-    class_weight: "balanced"
+    class_weight: balanced
     solver: "lbfgs"
     n_jobs: null
-
-calibration:
-  method: "temperature_or_raw"
-  selection_metric: "nll"
-  selection_split: "policy_validation"

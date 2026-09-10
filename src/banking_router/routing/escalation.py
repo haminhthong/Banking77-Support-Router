@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -33,17 +33,24 @@ class SensitiveIntentGuard:
         self.sensitive_trigger = float(sensitive_trigger)
         if taxonomy is not None:
             selected = {
-                intent for intent in self.class_to_idx
+                intent
+                for intent in self.class_to_idx
                 if taxonomy.requires_priority_review(intent)
             }
         else:
             selected = set(sensitive_intents or ())
         self.sensitive_intents = frozenset(selected)
-        self.sensitive_indices = [self.class_to_idx[item] for item in self.sensitive_intents]
+        self.sensitive_indices = [
+            self.class_to_idx[item] for item in self.sensitive_intents
+        ]
 
         groups: dict[str, list[int]] = defaultdict(list)
         for intent, index in self.class_to_idx.items():
-            category = taxonomy.get_sensitive_category(intent) if taxonomy else "sensitive_case"
+            category = (
+                taxonomy.get_sensitive_category(intent)
+                if taxonomy
+                else "sensitive_case"
+            )
             if intent in self.sensitive_intents and category != "none":
                 groups[category].append(index)
         self.sensitive_group_indices = dict(groups)
@@ -62,12 +69,18 @@ class SensitiveIntentGuard:
             for category, indices in self.sensitive_group_indices.items()
             if indices
         }
-        sensitive_mass = float(probs[self.sensitive_indices].sum()) if self.sensitive_indices else 0.0
+        sensitive_mass = (
+            float(probs[self.sensitive_indices].sum())
+            if self.sensitive_indices
+            else 0.0
+        )
         best_intent = None
         best_score = 0.0
         best_category = None
         if self.sensitive_indices:
-            best_index = max(self.sensitive_indices, key=lambda index: float(probs[index]))
+            best_index = max(
+                self.sensitive_indices, key=lambda index: float(probs[index])
+            )
             best_score = float(probs[best_index])
             best_intent = str(self.classes[best_index])
             if self.taxonomy:

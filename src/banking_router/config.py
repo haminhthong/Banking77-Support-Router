@@ -12,6 +12,7 @@ CONFIG_DIR = PROJECT_ROOT / "configs"
 DATA_DIR = PROJECT_ROOT / "data"
 ARTIFACTS_DIR = PROJECT_ROOT / "artifacts"
 REPORTS_DIR = PROJECT_ROOT / "reports"
+SEED = 42
 
 
 def load_yaml(path: str | Path) -> dict[str, Any]:

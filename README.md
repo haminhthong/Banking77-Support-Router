@@ -122,6 +122,7 @@ Banking77-Support-Router/
 │   └── evaluation/ood.jsonl         # smoke set ngoài scope
 ├── reports/                         # tạo khi train/evaluate/API chạy
 ├── scripts/
+│   ├── __init__.py
 │   ├── download_data.py
 │   ├── prepare_ci.py
 │   └── manual_api_test.py
@@ -131,19 +132,22 @@ Banking77-Support-Router/
 │   └── banking_router/
 │       ├── api/                     # FastAPI schemas và endpoints
 │       ├── data/                    # loader, split, normalization, audit
-│       ├── evaluation/              # classification, calibration, selective, scope
+│       ├── evaluation/              # metric dùng chung, classification, calibration, selective, scope
 │       ├── modeling/                # pipeline, calibration, training, artifact
 │       ├── routing/                 # taxonomy, queue, scope, sensitive, policy, service
 │       ├── storage/                 # SQLite ticket/review repository nhỏ
-│       └── telemetry/               # redacted request logging
+│       └── telemetry/               # hàm che PII dùng cho log/SQLite
 ├── tests/
 ├── Dockerfile
 ├── Makefile
 ├── requirements.txt
+├── requirements-dev.txt
 └── README.md
 ```
 
 `artifacts/` là source of truth duy nhất cho inference. Không còn `models/releases`, `production.json`, release promotion, manifest/checksum bundle hoặc các bản config/model trùng lặp.
+
+`configs/routing_policy.yaml` chỉ chứa mục tiêu thực nghiệm và các kiểm tra cố định dùng khi train. Threshold đã tối ưu cho serving được ghi một lần vào `artifacts/routing_policy.json`; API, evaluator và test đều đọc từ artifact này. Seed tái lập được khai báo duy nhất là `SEED = 42` trong `src/banking_router/config.py`.
 
 ## Cài đặt
 
@@ -155,26 +159,28 @@ cd Banking77-Support-Router
 python -m venv .venv
 ```
 
-Windows PowerShell:
+Windows PowerShell (đủ dependency cho train, evaluate, test và lint):
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
 ```
 
 Linux/macOS:
 
 ```bash
 source .venv/bin/activate
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
 ```
+
+`requirements.txt` chỉ chứa dependency runtime để Docker/API không kéo theo pandas, pytest hoặc Ruff. `requirements-dev.txt` kế thừa runtime và thêm tool tải dữ liệu, train/evaluate, test và lint.
 
 ## Huấn luyện và đánh giá
 
 Nếu `data/raw/train.csv` và `data/raw/test.csv` chưa có:
 
 ```bash
-python scripts/download_data.py
+python -m scripts.download_data
 ```
 
 Train ghi đè bộ artifact canonical trong `artifacts/` và report vào `reports/training/`:
@@ -196,6 +202,7 @@ make download
 make train
 make evaluate
 make test
+make lint
 ```
 
 ## Chạy API
@@ -210,7 +217,7 @@ Các endpoint chính:
 - `GET /health/ready`: model canonical đã load và có đủ 77 class.
 - `POST /v1/route`: route một ticket.
 - `POST /v1/route/batch`: route nhiều ticket.
-- `POST /v1/feedback`: lưu kết quả review để phân tích sau.
+- `POST /v1/feedback`: lưu kết quả review của một ticket đã tồn tại; ticket không tồn tại trả `404`.
 - `POST /v1/tickets/{request_id}/review`: cập nhật review cho ticket đã lưu.
 
 Ví dụ:
@@ -221,29 +228,31 @@ curl -X POST http://localhost:8000/v1/route \
   -d '{"text":"Why was my cash withdrawal declined?","top_k":3}'
 ```
 
-Response tách rõ bốn lớp: `prediction`, `queue_prediction`, `scope`, `sensitive_case` và `decision`. Raw ticket/notes được redact PII trước khi ghi telemetry hoặc SQLite.
+Response tách rõ bốn lớp: `prediction`, `queue_prediction`, `scope`, `sensitive_case` và `decision`. Ticket và ghi chú review được che PII trước khi ghi SQLite; không có JSONL telemetry runtime.
 
 ## Docker
 
-Artifact canonical đã nằm trong repository nên image chỉ cần build và chạy:
+Artifact canonical đã nằm trong repository nên image chỉ cài dependency runtime, copy `src/` và `artifacts/`, kiểm tra model ngay lúc build, tạo `/app/reports` có quyền ghi và chạy bằng user không đặc quyền:
 
 ```bash
 docker build -t banking77-support-router .
 docker run --rm -p 8000:8000 banking77-support-router
 ```
 
-Healthcheck của image gọi `/health/ready`.
+Healthcheck của image gọi `/health/ready`. Container smoke test trong CI tiếp tục POST một ticket thật tới `/v1/route` sau khi readiness thành công.
 
 ## CI và kiểm thử
 
-GitHub Actions dùng Python 3.11, cài `requirements.txt`, chạy `scripts/prepare_ci.py`, compile source/test và chạy pytest. Bước prepare chỉ tải dataset nếu checkout thiếu CSV và load artifact canonical để fail sớm khi thiếu model; nó không tạo release pointer hay promotion state.
+GitHub Actions có hai job. Job `quality` dùng Python 3.11, cài `requirements-dev.txt`, chạy `python -m scripts.prepare_ci`, `pip check`, Ruff lint/format, compile và pytest. Job `docker-smoke` chỉ chạy sau quality, build Docker image, chờ `/health/ready`, rồi POST `/v1/route`. Bước prepare chỉ tải dataset nếu checkout thiếu CSV và load artifact canonical để fail sớm khi thiếu model; nó không tạo release pointer hay promotion state.
 
 Chạy local:
 
 ```bash
-python scripts/prepare_ci.py
+python -m scripts.prepare_ci
 python -m compileall -q src scripts tests
 python -m pytest -q
+python -m ruff check src scripts tests
+python -m ruff format --check src scripts tests
 ```
 
 ## Giới hạn và hướng mở rộng

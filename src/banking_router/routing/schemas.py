@@ -55,9 +55,9 @@ class SensitiveCaseAssessment:
 class RoutingDecision:
     """Quyết định cuối: auto_route hoặc human_review."""
 
-    action: str  # "auto_route" | "human_review" | "priority_human_review"
+    action: str  # Một trong: tự route, review thường hoặc review ưu tiên.
     queue_id: str
-    priority: str  # "normal" | "high" | "critical"
+    priority: str  # Một trong: bình thường, cao hoặc khẩn cấp.
     requires_human_review: bool
     reason_codes: list[str] = field(default_factory=list)
     intent: str | None = None

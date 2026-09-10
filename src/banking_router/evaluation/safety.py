@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 
@@ -81,8 +82,18 @@ def evaluate_routing_metrics(
     }
     if routing_results is not None:
         result["sensitive_group_counts"] = {
-            category: sum(1 for item in routing_results if item.sensitive_case.sensitive_category == category)
-            for category in sorted({item.sensitive_case.sensitive_category for item in routing_results if item.sensitive_case.sensitive_category})
+            category: sum(
+                1
+                for item in routing_results
+                if item.sensitive_case.sensitive_category == category
+            )
+            for category in sorted(
+                {
+                    item.sensitive_case.sensitive_category
+                    for item in routing_results
+                    if item.sensitive_case.sensitive_category
+                }
+            )
         }
     return result
 
@@ -98,25 +109,33 @@ def analyze_confusion_pairs(
     """Tìm cặp intent nhầm nhiều nhất kèm ví dụ đại diện."""
     pair_counts: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for text, true_label, pred_label, confidence, margin in zip(
-        texts, true_labels, pred_labels, confidences, margins
+        texts, true_labels, pred_labels, confidences, margins, strict=True
     ):
         if true_label != pred_label:
-            pair_counts.setdefault((true_label, pred_label), []).append({
-                "text": text,
-                "confidence": round(float(confidence), 4),
-                "margin": round(float(margin), 4),
-            })
+            pair_counts.setdefault((true_label, pred_label), []).append(
+                {
+                    "text": text,
+                    "confidence": round(float(confidence), 4),
+                    "margin": round(float(margin), 4),
+                }
+            )
 
     result = []
     for (true_label, predicted_label), examples in sorted(
         pair_counts.items(), key=lambda item: len(item[1]), reverse=True
     )[:top_n]:
-        result.append({
-            "true_intent": true_label,
-            "predicted_intent": predicted_label,
-            "error_count": len(examples),
-            "avg_confidence": round(float(np.mean([item["confidence"] for item in examples])), 4),
-            "avg_margin": round(float(np.mean([item["margin"] for item in examples])), 4),
-            "example_queries": [item["text"] for item in examples[:3]],
-        })
+        result.append(
+            {
+                "true_intent": true_label,
+                "predicted_intent": predicted_label,
+                "error_count": len(examples),
+                "avg_confidence": round(
+                    float(np.mean([item["confidence"] for item in examples])), 4
+                ),
+                "avg_margin": round(
+                    float(np.mean([item["margin"] for item in examples])), 4
+                ),
+                "example_queries": [item["text"] for item in examples[:3]],
+            }
+        )
     return result

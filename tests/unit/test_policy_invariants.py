@@ -1,8 +1,10 @@
 """Kiểm thử invariant cho luồng xác suất và routing policy."""
 
 import numpy as np
-
-from src.banking_router.data.contracts import BANKING77_77_CLASSES, get_domain_for_intent
+from src.banking_router.data.contracts import (
+    BANKING77_77_CLASSES,
+    get_domain_for_intent,
+)
 from src.banking_router.routing.escalation import SensitiveIntentGuard
 from src.banking_router.routing.policy import RoutingPolicy
 from src.banking_router.routing.schemas import IntentPrediction, SensitiveCaseAssessment
@@ -30,7 +32,7 @@ def test_top_k_does_not_change_sensitive_decision():
     taxonomy = TaxonomyResolver()
     service = RoutingService(
         model=model,
-        policy=RoutingPolicy(queue_threshold=0.45, sensitive_trigger=0.20, taxonomy_resolver=taxonomy),
+        policy=RoutingPolicy(queue_threshold=0.45, taxonomy_resolver=taxonomy),
         sensitive_guard=SensitiveIntentGuard(model.classes_, taxonomy=taxonomy),
         scope_guard=ScopeGuard(),
         taxonomy=taxonomy,
@@ -45,8 +47,14 @@ def test_top_k_does_not_change_sensitive_decision():
 def test_sensitive_review_does_not_overwrite_top_intent():
     prediction = IntentPrediction("card_arrival", "card_services", 0.45, 0.20, 1.2)
     sensitive = SensitiveCaseAssessment(
-        True, "compromised_card", 0.25, False, ["SENSITIVE_INTENT_MASS"],
-        0.25, "account_compromise", {"account_compromise": 0.25},
+        True,
+        "compromised_card",
+        0.25,
+        False,
+        ["SENSITIVE_INTENT_MASS"],
+        0.25,
+        "account_compromise",
+        {"account_compromise": 0.25},
     )
     decision = RoutingPolicy(queue_threshold=0.45).evaluate(prediction, sensitive)
     assert decision.action == "priority_human_review"
@@ -66,7 +74,9 @@ def test_policy_action_partition_and_scope_guard():
     safe = SensitiveCaseAssessment(False, None, 0.0, False)
     prediction = IntentPrediction("card_arrival", "card_services", 0.85, 0.50, 0.5)
     auto = policy.evaluate(prediction, safe)
-    review = policy.evaluate(prediction, safe, scope_detected=True, scope_reasons=["OUT_OF_SCOPE_QUERY"])
+    review = policy.evaluate(
+        prediction, safe, scope_detected=True, scope_reasons=["OUT_OF_SCOPE_QUERY"]
+    )
     assert auto.action in {"auto_route", "human_review", "priority_human_review"}
     assert review.action == "human_review"
     assert review.requires_human_review is True

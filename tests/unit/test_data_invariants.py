@@ -1,20 +1,20 @@
 """Kiểm thử invariant chất lượng dữ liệu, chống rò rỉ và tập benchmark chuẩn."""
 
-from pathlib import Path
 import pandas as pd
 import pytest
-
 from src.banking_router.data.audit import audit_conflicting_labels, clean_dataset
-from src.banking_router.data.loader import load_official_test, normalize_dataset
+from src.banking_router.data.loader import load_official_test
 from src.banking_router.data.split import load_training_splits, summarize_split_quality
 
 
 def test_raw_conflicts_detected_before_dedup():
     """Invariant: phải bắt xung đột nhãn trước khi loại bản ghi trùng."""
-    df_raw = pd.DataFrame({
-        "text": ["Where is my card?", "Where is my card?", "Cancel my transfer"],
-        "intent": ["card_arrival", "card_delivery_estimate", "cancel_transfer"],
-    })
+    df_raw = pd.DataFrame(
+        {
+            "text": ["Where is my card?", "Where is my card?", "Cancel my transfer"],
+            "intent": ["card_arrival", "card_delivery_estimate", "cancel_transfer"],
+        }
+    )
 
     # Audit trước khi làm sạch.
     conflicts = audit_conflicting_labels(df_raw)
@@ -30,7 +30,9 @@ def test_raw_conflicts_detected_before_dedup():
 
 def test_normalized_overlap_fails_contract():
     """Invariant: benchmark khử trùng không có overlap chuẩn hóa giữa các split."""
-    tr, cal, val, te = load_training_splits(raw_dir="data/raw", benchmark="strict_decontaminated")
+    tr, cal, val, te = load_training_splits(
+        raw_dir="data/raw", benchmark="strict_decontaminated"
+    )
     summary = summarize_split_quality(tr, cal, val, te)
 
     # Ở chế độ khử trùng, train/calibration/validation không overlap chuẩn hóa với test.

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from collections.abc import Sequence
+
 import numpy as np
 
 from .schemas import QueuePrediction
@@ -28,16 +29,23 @@ class QueueProjector:
         values = values / total
 
         queue_probabilities: dict[str, float] = {}
-        for intent, probability in zip(self.classes, values):
+        for intent, probability in zip(self.classes, values, strict=True):
             queue = self.taxonomy.get_queue(intent)
-            queue_probabilities[queue] = queue_probabilities.get(queue, 0.0) + float(probability)
+            queue_probabilities[queue] = queue_probabilities.get(queue, 0.0) + float(
+                probability
+            )
 
-        ranked = sorted(queue_probabilities.items(), key=lambda item: item[1], reverse=True)
+        ranked = sorted(
+            queue_probabilities.items(), key=lambda item: item[1], reverse=True
+        )
         top_queue, top_probability = ranked[0]
         second_probability = ranked[1][1] if len(ranked) > 1 else 0.0
         return QueuePrediction(
             queue=top_queue,
             confidence=round(float(top_probability), 6),
             margin=round(float(top_probability - second_probability), 6),
-            probabilities={key: round(float(value), 6) for key, value in queue_probabilities.items()},
+            probabilities={
+                key: round(float(value), 6)
+                for key, value in queue_probabilities.items()
+            },
         )

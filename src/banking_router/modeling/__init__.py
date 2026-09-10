@@ -7,17 +7,15 @@ from .calibration import (
     select_probability_model,
 )
 from .pipeline import build_pipeline
-from .training import calculate_ece, calculate_entropy, train_and_optimize
+from .training import train_and_optimize
 
 __all__ = [
-    "build_pipeline",
-    "TemperatureScaledModel",
-    "fit_temperature",
-    "select_probability_model",
     "ModelArtifacts",
-    "save_artifacts",
+    "TemperatureScaledModel",
+    "build_pipeline",
+    "fit_temperature",
     "load_artifacts",
-    "calculate_ece",
-    "calculate_entropy",
+    "save_artifacts",
+    "select_probability_model",
     "train_and_optimize",
 ]

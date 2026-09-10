@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from typing import Any
+
 import numpy as np
-from sklearn.metrics import accuracy_score, classification_report, f1_score
+from sklearn.metrics import accuracy_score, f1_score
+
 from ..data.contracts import get_domain_for_intent
 
 

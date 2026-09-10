@@ -1,7 +1,6 @@
 """Kiểm thử hợp đồng batch: top_k được áp dụng riêng cho từng ticket."""
 
 import numpy as np
-
 from src.banking_router.data.contracts import BANKING77_77_CLASSES
 from src.banking_router.routing.escalation import SensitiveIntentGuard
 from src.banking_router.routing.policy import RoutingPolicy
@@ -29,7 +28,26 @@ def test_route_batch_preserves_each_ticket_top_k():
         scope_guard=ScopeGuard(),
         taxonomy=taxonomy,
     )
-    results = service.route_batch(["Where is my card?", "How do I activate my card?"], top_ks=[1, 5])
+    results = service.route_batch(
+        ["Where is my card?", "How do I activate my card?"], top_ks=[1, 5]
+    )
     assert len(results) == 2
     assert len(results[0].prediction.alternatives) == 1
     assert len(results[1].prediction.alternatives) == 5
+
+
+def test_route_batch_preserves_client_request_ids():
+    taxonomy = TaxonomyResolver()
+    model = FakeModel()
+    service = RoutingService(
+        model=model,
+        policy=RoutingPolicy(taxonomy_resolver=taxonomy),
+        sensitive_guard=SensitiveIntentGuard(model.classes_, taxonomy=taxonomy),
+        scope_guard=ScopeGuard(),
+        taxonomy=taxonomy,
+    )
+    results = service.route_batch(
+        ["Where is my card?", "How do I activate my card?"],
+        request_ids=["ticket-1", "ticket-2"],
+    )
+    assert [result.request_id for result in results] == ["ticket-1", "ticket-2"]

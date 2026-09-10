@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import FeatureUnion, Pipeline
@@ -26,7 +27,9 @@ def build_pipeline(
     features_cfg = cfg.get("features", {})
     word_cfg = dict(features_cfg.get("word", features_cfg.get("tfidf", {})))
     char_cfg = dict(features_cfg.get("char", {}))
-    classifier_cfg = dict(cfg.get("classifier", {}).get("params", cfg.get("classifier", {})))
+    classifier_cfg = dict(
+        cfg.get("classifier", {}).get("params", cfg.get("classifier", {}))
+    )
 
     word_vec_params = {
         "ngram_range": tuple(word_cfg.get("ngram_range", word_ngram_range)),
@@ -41,7 +44,7 @@ def build_pipeline(
         "max_iter": classifier_cfg.get("max_iter", max_iter),
         "class_weight": classifier_cfg.get("class_weight", "balanced"),
         "solver": classifier_cfg.get("solver", "lbfgs"),
-        "n_jobs": classifier_cfg.get("n_jobs", None),
+        "n_jobs": classifier_cfg.get("n_jobs"),
     }
 
     if use_char_features and char_ngram_range is not None:
@@ -52,23 +55,29 @@ def build_pipeline(
             "max_features": char_cfg.get("max_features", 25000),
             "sublinear_tf": char_cfg.get("sublinear_tf", True),
         }
-        features = FeatureUnion([
-            ("word_tfidf", TfidfVectorizer(**word_vec_params)),
-            ("char_tfidf", TfidfVectorizer(**char_vec_params)),
-        ])
-        pipeline = Pipeline([
-            ("features", features),
-            ("clf", LogisticRegression(**lr_params)),
-        ])
+        features = FeatureUnion(
+            [
+                ("word_tfidf", TfidfVectorizer(**word_vec_params)),
+                ("char_tfidf", TfidfVectorizer(**char_vec_params)),
+            ]
+        )
+        pipeline = Pipeline(
+            [
+                ("features", features),
+                ("clf", LogisticRegression(**lr_params)),
+            ]
+        )
         config = {
             "features": {"word": word_vec_params, "char": char_vec_params},
             "classifier": lr_params,
         }
     else:
-        pipeline = Pipeline([
-            ("tfidf", TfidfVectorizer(**word_vec_params)),
-            ("clf", LogisticRegression(**lr_params)),
-        ])
+        pipeline = Pipeline(
+            [
+                ("tfidf", TfidfVectorizer(**word_vec_params)),
+                ("clf", LogisticRegression(**lr_params)),
+            ]
+        )
         config = {
             "features": {"word": word_vec_params},
             "classifier": lr_params,

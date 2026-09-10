@@ -8,9 +8,15 @@ from pydantic import BaseModel, Field
 
 
 class RouteRequest(BaseModel):
-    text: str = Field(..., min_length=2, max_length=1000, description="Nội dung ticket hỗ trợ")
-    top_k: int = Field(default=3, ge=1, le=5, description="Số intent thay thế được hiển thị")
-    request_id: str | None = Field(default=None, description="Mã request do client cung cấp")
+    text: str = Field(
+        ..., min_length=2, max_length=1000, description="Nội dung ticket hỗ trợ"
+    )
+    top_k: int = Field(
+        default=3, ge=1, le=5, description="Số intent thay thế được hiển thị"
+    )
+    request_id: str | None = Field(
+        default=None, description="Mã request do client cung cấp"
+    )
 
 
 class BatchRouteRequest(BaseModel):

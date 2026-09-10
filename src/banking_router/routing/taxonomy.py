@@ -24,7 +24,9 @@ class TaxonomyResolver:
             },
         )
         self.sensitive_intents = frozenset(
-            intent for intent in self.intents_cfg if self.requires_priority_review(intent)
+            intent
+            for intent in self.intents_cfg
+            if self.requires_priority_review(intent)
         )
 
     def _values(self, intent: str) -> dict[str, Any]:

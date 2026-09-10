@@ -5,8 +5,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any
-from ..routing.service import RoutingService
+
 from ..data.scope import load_scope_splits
+from ..routing.service import RoutingService
 
 
 def evaluate_ood_benchmark(
@@ -24,7 +25,7 @@ def evaluate_ood_benchmark(
 
     if split == "all":
         records = []
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if line:

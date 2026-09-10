@@ -1,8 +1,8 @@
 setup:
-	python -m pip install -r requirements.txt
+	python -m pip install -r requirements-dev.txt
 
 download:
-	python scripts/download_data.py
+	python -m scripts.download_data
 
 train:
 	python -m src.train
@@ -14,4 +14,8 @@ serve:
 	uvicorn src.banking_router.api.app:app --host 0.0.0.0 --port 8000
 
 test:
-	pytest -q
+	python -m pytest -q
+
+lint:
+	python -m ruff check src scripts tests
+	python -m ruff format --check src scripts tests

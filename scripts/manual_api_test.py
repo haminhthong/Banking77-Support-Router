@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -24,24 +25,41 @@ def test_api():
 
     print("\n=== 2. KIỂM THỬ CANONICAL ROUTING (/v1/route) ===")
     test_cases = [
-        ("Where is my card?", 3, "card_arrival", "card_services"),
-        ("I lost my phone and card, help me immediately!", 3, "lost_or_stolen_card", "account_security"),
-        ("Why was my cash withdrawal declined?", 3, "declined_cash_withdrawal", "atm_cash"),
-        ("How do I apply for a 30-year fixed home mortgage loan?", 3, "OOD/Human Review", "general_banking"),
-        ("asdfghjklqwerty", 3, "OOD/Human Review", "general_banking"),
+        ("Where is my card?", 3),
+        (
+            "I lost my phone and card, help me immediately!",
+            3,
+        ),
+        (
+            "Why was my cash withdrawal declined?",
+            3,
+        ),
+        (
+            "How do I apply for a 30-year fixed home mortgage loan?",
+            3,
+        ),
+        ("asdfghjklqwerty", 3),
     ]
 
-    for text, top_k, expected_intent, expected_domain in test_cases:
+    first_request_id = None
+    for text, top_k in test_cases:
         p_res = client.post(
             "/v1/route",
             json={"text": text, "top_k": top_k},
         )
         assert p_res.status_code == 200
         data = p_res.json()
+        first_request_id = first_request_id or data["request_id"]
         print(f"\nQuery: '{text}'")
-        print(f"  Action: {data['decision']['action']} | Queue: {data['decision']['queue']} | Priority: {data['decision']['priority']}")
-        print(f"  Predicted Intent: {data['prediction']['intent']} ({data['prediction']['domain']}) | Confidence: {data['prediction']['confidence']}")
-        print(f"  Signals: sensitive={data['sensitive_case']['requires_priority_review']} | scope={not data['scope']['supported']}")
+        print(
+            f"  Action: {data['decision']['action']} | Queue: {data['decision']['queue']} | Priority: {data['decision']['priority']}"
+        )
+        print(
+            f"  Predicted Intent: {data['prediction']['intent']} ({data['prediction']['domain']}) | Confidence: {data['prediction']['confidence']}"
+        )
+        print(
+            f"  Signals: sensitive={data['sensitive_case']['requires_priority_review']} | scope={not data['scope']['supported']}"
+        )
 
     print("\n=== 3. KIỂM THỬ BATCH ROUTING (/v1/route/batch) ===")
     b_res = client.post(
@@ -63,7 +81,7 @@ def test_api():
     fb_res = client.post(
         "/v1/feedback",
         json={
-            "request_id": "req_manual_test_01",
+            "request_id": first_request_id,
             "reviewed_intent": "card_arrival",
             "reviewer_id": "senior_agent_07",
             "notes": "Verified through manual customer phone confirmation",

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -11,7 +11,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import FeatureUnion, Pipeline
 
 from ..data.normalization import normalize_pii_semantically
-
 
 SUPPORTED = "SUPPORTED"
 UNSUPPORTED = "UNSUPPORTED"
@@ -46,42 +45,48 @@ def train_scope_classifier(
     """Huấn luyện model phạm vi từ dữ liệu Banking77 và tập ngoài phạm vi có nhãn."""
     texts = [normalize_pii_semantically(text) for text in supported_texts]
     texts.extend(normalize_pii_semantically(text) for text in unsupported_texts)
-    labels = np.array([SUPPORTED] * len(supported_texts) + [UNSUPPORTED] * len(unsupported_texts))
+    labels = np.array(
+        [SUPPORTED] * len(supported_texts) + [UNSUPPORTED] * len(unsupported_texts)
+    )
     if len(set(labels)) != 2:
         raise ValueError("Scope classifier cần cả mẫu SUPPORTED và UNSUPPORTED")
 
-    features = FeatureUnion([
-        (
-            "word",
-            TfidfVectorizer(
-                lowercase=True,
-                ngram_range=(1, 2),
-                min_df=1,
-                sublinear_tf=True,
-                max_features=30000,
+    features = FeatureUnion(
+        [
+            (
+                "word",
+                TfidfVectorizer(
+                    lowercase=True,
+                    ngram_range=(1, 2),
+                    min_df=1,
+                    sublinear_tf=True,
+                    max_features=30000,
+                ),
             ),
-        ),
-        (
-            "char",
-            TfidfVectorizer(
-                analyzer="char_wb",
-                ngram_range=(3, 5),
-                min_df=1,
-                sublinear_tf=True,
-                max_features=40000,
+            (
+                "char",
+                TfidfVectorizer(
+                    analyzer="char_wb",
+                    ngram_range=(3, 5),
+                    min_df=1,
+                    sublinear_tf=True,
+                    max_features=40000,
+                ),
             ),
-        ),
-    ])
-    pipeline = Pipeline([
-        ("features", features),
-        (
-            "classifier",
-            LogisticRegression(
-                max_iter=2000,
-                class_weight="balanced",
-                random_state=seed,
+        ]
+    )
+    pipeline = Pipeline(
+        [
+            ("features", features),
+            (
+                "classifier",
+                LogisticRegression(
+                    max_iter=2000,
+                    class_weight="balanced",
+                    random_state=seed,
+                ),
             ),
-        ),
-    ])
+        ]
+    )
     pipeline.fit(texts, labels)
     return ScopeClassifier(pipeline=pipeline)

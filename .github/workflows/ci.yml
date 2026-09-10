@@ -2,21 +2,26 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
-    name: Python 3.11 tests
+  quality:
+    name: Quality and tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -24,13 +29,26 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: requirements.txt
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
 
-      - name: Install dependencies
-        run: python -m pip install -r requirements.txt
+      - name: Install development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
 
-      - name: Prepare dataset and model fixtures
-        run: python scripts/prepare_ci.py
+      - name: Prepare CI inputs
+        run: python -m scripts.prepare_ci
+
+      - name: Dependency check
+        run: python -m pip check
+
+      - name: Ruff lint
+        run: python -m ruff check src scripts tests
+
+      - name: Ruff format
+        run: python -m ruff format --check src scripts tests
 
       - name: Compile source and tests
         run: python -m compileall -q src scripts tests
@@ -39,3 +57,42 @@ jobs:
         env:
           PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
         run: python -m pytest -q
+
+  docker-smoke:
+    name: Docker smoke test
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t banking77-router:test .
+
+      - name: Start container
+        run: docker run -d --name banking77-router -p 8000:8000 banking77-router:test
+
+      - name: Wait for readiness
+        run: |
+          for i in {1..20}; do
+            if curl --fail http://127.0.0.1:8000/health/ready; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs banking77-router
+          exit 1
+
+      - name: Route smoke test
+        run: |
+          curl --fail \
+            -X POST \
+            http://127.0.0.1:8000/v1/route \
+            -H "Content-Type: application/json" \
+            -d '{"text":"Why was my cash withdrawal declined?","top_k":3}'
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f banking77-router || true

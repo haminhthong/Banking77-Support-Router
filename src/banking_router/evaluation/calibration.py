@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from typing import Any
+
 import numpy as np
 from sklearn.metrics import log_loss
-from ..modeling.training import calculate_ece
+
+from .metrics import expected_calibration_error
 
 
 def compute_multiclass_brier_score(
@@ -33,7 +35,7 @@ def evaluate_calibration(
     classes: np.ndarray,
 ) -> dict[str, Any]:
     """Tính các metric hiệu chuẩn trên dữ liệu test."""
-    ece = calculate_ece(confidences, predictions, targets)
+    ece = expected_calibration_error(confidences, predictions, targets)
     loss = float(log_loss(targets, probabilities, labels=classes))
     brier = compute_multiclass_brier_score(probabilities, targets, classes)
 

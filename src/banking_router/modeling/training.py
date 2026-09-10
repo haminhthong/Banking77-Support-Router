@@ -11,42 +11,28 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score, f1_score, log_loss
 
-from .artifact import save_artifacts
-from .calibration import fit_temperature, select_probability_model
-from .pipeline import build_pipeline
-from ..config import get_model_config, get_routing_policy_config, get_taxonomy_config
+from ..config import (
+    SEED,
+    get_model_config,
+    get_routing_policy_config,
+    get_taxonomy_config,
+)
 from ..data import load_training_splits, summarize_split_quality
 from ..data.normalization import NORMALIZATION_VERSION
 from ..data.scope import load_scope_splits
+from ..evaluation.metrics import entropy, expected_calibration_error
 from ..routing.escalation import SensitiveIntentGuard
 from ..routing.policy import RoutingPolicy
 from ..routing.queue_projector import QueueProjector
 from ..routing.schemas import IntentPrediction
 from ..routing.scope import ScopeGuard
 from ..routing.taxonomy import TaxonomyResolver
+from .artifact import save_artifacts
+from .calibration import fit_temperature, select_probability_model
+from .pipeline import build_pipeline
 from .scope import train_scope_classifier
 
 LOGGER = logging.getLogger("banking_router.training")
-
-
-def calculate_ece(confidences: np.ndarray, predictions: np.ndarray, targets: np.ndarray, n_bins: int = 10) -> float:
-    """Tính Expected Calibration Error."""
-    if len(confidences) == 0:
-        return 0.0
-    boundaries = np.linspace(0.0, 1.0, n_bins + 1)
-    correct = (predictions == targets).astype(float)
-    ece = 0.0
-    for index in range(n_bins):
-        lower, upper = boundaries[index], boundaries[index + 1]
-        in_bin = (confidences >= lower) & ((confidences <= upper) if index == n_bins - 1 else (confidences < upper))
-        if in_bin.any():
-            ece += float(in_bin.mean()) * abs(float(correct[in_bin].mean()) - float(confidences[in_bin].mean()))
-    return float(ece)
-
-
-def calculate_entropy(probabilities: np.ndarray, eps: float = 1e-12) -> np.ndarray:
-    values = np.clip(probabilities, eps, 1.0)
-    return -np.sum(values * np.log(values), axis=1)
 
 
 def optimize_queue_policy_thresholds(
@@ -66,11 +52,15 @@ def optimize_queue_policy_thresholds(
     probabilities = probability_model.predict_proba(val_texts)
     classes = np.asarray(probability_model.classes_)
     projector = QueueProjector(classes, taxonomy)
-    target_queues = np.asarray([taxonomy.get_queue(str(intent)) for intent in val_targets])
-    sensitive_targets = np.asarray([str(intent) in taxonomy.get_sensitive_intents() for intent in val_targets])
+    target_queues = np.asarray(
+        [taxonomy.get_queue(str(intent)) for intent in val_targets]
+    )
+    sensitive_targets = np.asarray(
+        [str(intent) in taxonomy.get_sensitive_intents() for intent in val_targets]
+    )
     scope = scope_guard or ScopeGuard()
     precomputed: list[tuple[IntentPrediction, Any, bool, list[str], np.ndarray]] = []
-    for row, text in zip(probabilities, val_texts):
+    for row, text in zip(probabilities, val_texts, strict=True):
         ranked = row.argsort()[::-1]
         confidence = float(row[ranked[0]])
         margin = float(row[ranked[0]] - row[ranked[1]]) if len(ranked) > 1 else 1.0
@@ -80,10 +70,12 @@ def optimize_queue_policy_thresholds(
             domain=taxonomy.get_domain(intent),
             confidence=confidence,
             margin=margin,
-            entropy=float(calculate_entropy(np.asarray([row]))[0]),
+            entropy=float(entropy(row)),
         )
-        scope_detected, scope_reasons = scope.detect(str(text), confidence, margin)
-        precomputed.append((prediction, projector.project(row), scope_detected, scope_reasons, row))
+        scope_detected, scope_reasons = scope.detect(str(text), confidence)
+        precomputed.append(
+            (prediction, projector.project(row), scope_detected, scope_reasons, row)
+        )
 
     queue_thresholds = np.linspace(0.45, 0.95, 15)
     queue_margins = np.linspace(0.0, 0.20, 5)
@@ -92,44 +84,70 @@ def optimize_queue_policy_thresholds(
     for queue_threshold in queue_thresholds:
         for queue_margin in queue_margins:
             for sensitive_threshold in sensitive_thresholds:
-                guard = SensitiveIntentGuard(classes, taxonomy=taxonomy, sensitive_trigger=float(sensitive_threshold))
+                guard = SensitiveIntentGuard(
+                    classes,
+                    taxonomy=taxonomy,
+                    sensitive_trigger=float(sensitive_threshold),
+                )
                 policy = RoutingPolicy(
                     queue_threshold=float(queue_threshold),
                     queue_margin=float(queue_margin),
                     max_entropy=max_entropy,
-                    sensitive_trigger=float(sensitive_threshold),
                     minimum_sensitive_signal=minimum_sensitive_signal,
                     minimum_scope_sensitive_signal=minimum_scope_sensitive_signal,
                     taxonomy_resolver=taxonomy,
                 )
                 decisions = []
-                for prediction, queue_prediction, scope_detected, scope_reasons, row in precomputed:
+                for (
+                    prediction,
+                    queue_prediction,
+                    scope_detected,
+                    scope_reasons,
+                    row,
+                ) in precomputed:
                     sensitive_case = guard.assess(row, scope_detected, scope_reasons)
-                    decisions.append(policy.evaluate(
-                        prediction,
-                        sensitive_case,
-                        scope_detected=scope_detected,
-                        scope_reasons=scope_reasons,
-                        queue_prediction=queue_prediction,
-                    ))
+                    decisions.append(
+                        policy.evaluate(
+                            prediction,
+                            sensitive_case,
+                            scope_detected=scope_detected,
+                            scope_reasons=scope_reasons,
+                            queue_prediction=queue_prediction,
+                        )
+                    )
                 actions = np.asarray([decision.action for decision in decisions])
                 auto = actions == "auto_route"
                 priority = actions == "priority_human_review"
                 coverage = float(auto.mean()) if len(auto) else 0.0
-                routed_queues = np.asarray([decision.queue_id for decision in decisions])
-                wrong_queue = float((routed_queues[auto] != target_queues[auto]).mean()) if auto.any() else 0.0
-                sensitive_recall = float((priority & sensitive_targets).sum() / sensitive_targets.sum()) if sensitive_targets.any() else 1.0
-                candidates.append({
-                    "queue_threshold": float(queue_threshold),
-                    "queue_margin": float(queue_margin),
-                    "sensitive_threshold": float(sensitive_threshold),
-                    "auto_route_coverage": coverage,
-                    "wrong_queue_rate": wrong_queue,
-                    "sensitive_case_recall": sensitive_recall,
-                })
+                routed_queues = np.asarray(
+                    [decision.queue_id for decision in decisions]
+                )
+                wrong_queue = (
+                    float((routed_queues[auto] != target_queues[auto]).mean())
+                    if auto.any()
+                    else 0.0
+                )
+                sensitive_recall = (
+                    float(
+                        (priority & sensitive_targets).sum() / sensitive_targets.sum()
+                    )
+                    if sensitive_targets.any()
+                    else 1.0
+                )
+                candidates.append(
+                    {
+                        "queue_threshold": float(queue_threshold),
+                        "queue_margin": float(queue_margin),
+                        "sensitive_threshold": float(sensitive_threshold),
+                        "auto_route_coverage": coverage,
+                        "wrong_queue_rate": wrong_queue,
+                        "sensitive_case_recall": sensitive_recall,
+                    }
+                )
 
     feasible = [
-        item for item in candidates
+        item
+        for item in candidates
         if item["wrong_queue_rate"] <= target_wrong_queue_rate
         and item["sensitive_case_recall"] >= target_sensitive_case_recall
         and item["auto_route_coverage"] >= min_coverage_floor
@@ -155,7 +173,7 @@ def optimize_queue_policy_thresholds(
 
 
 def train_and_optimize(
-    seed: int = 42,
+    seed: int = SEED,
     benchmark: str = "official",
     artifacts_dir: str | Path = "artifacts",
     reports_dir: str | Path = "reports/training",
@@ -166,7 +184,9 @@ def train_and_optimize(
     artifact_path.mkdir(parents=True, exist_ok=True)
     report_path.mkdir(parents=True, exist_ok=True)
 
-    train_df, cal_df, val_df, test_df = load_training_splits(raw_dir="data/raw", seed=seed, benchmark=benchmark)  # type: ignore[arg-type]
+    train_df, cal_df, val_df, test_df = load_training_splits(
+        raw_dir="data/raw", seed=seed, benchmark=benchmark
+    )  # type: ignore[arg-type]
     data_quality = summarize_split_quality(train_df, cal_df, val_df, test_df)
     model_cfg = get_model_config()
     pipeline, _ = build_pipeline(model_config=model_cfg)
@@ -181,8 +201,10 @@ def train_and_optimize(
     targets_val = val_df["intent"].to_numpy()
     raw_preds = classes[raw_proba.argmax(axis=1)]
     calibrated_preds = classes[calibrated_proba.argmax(axis=1)]
-    raw_ece = calculate_ece(raw_proba.max(axis=1), raw_preds, targets_val)
-    calibrated_ece = calculate_ece(calibrated_proba.max(axis=1), calibrated_preds, targets_val)
+    raw_ece = expected_calibration_error(raw_proba.max(axis=1), raw_preds, targets_val)
+    calibrated_ece = expected_calibration_error(
+        calibrated_proba.max(axis=1), calibrated_preds, targets_val
+    )
     raw_loss = float(log_loss(targets_val, raw_proba, labels=classes))
     calibrated_loss = float(log_loss(targets_val, calibrated_proba, labels=classes))
 
@@ -194,7 +216,9 @@ def train_and_optimize(
     scope_guard = ScopeGuard(
         min_chars=int(scope_cfg.get("min_chars", 4)),
         min_tokens=int(scope_cfg.get("min_tokens", 2)),
-        lexical_similarity_threshold=float(scope_cfg.get("lexical_similarity_threshold", 0.08)),
+        lexical_similarity_threshold=float(
+            scope_cfg.get("lexical_similarity_threshold", 0.08)
+        ),
         low_confidence_threshold=float(scope_cfg.get("low_confidence_threshold", 0.22)),
         unsupported_threshold=scope_threshold,
     )
@@ -210,7 +234,7 @@ def train_and_optimize(
     except (FileNotFoundError, ValueError, KeyError) as exc:
         LOGGER.warning("Không huấn luyện được scope classifier: %s", exc)
 
-    runtime_cfg = policy_cfg.get("runtime_thresholds", {})
+    fixed_cfg = policy_cfg.get("fixed_checks", {})
     optimization_cfg = policy_cfg.get("optimization", {})
     sensitive_cfg = policy_cfg.get("sensitive_case", {})
     policy_opt = optimize_queue_policy_thresholds(
@@ -218,13 +242,21 @@ def train_and_optimize(
         val_texts=val_df["text"],
         val_targets=targets_val,
         taxonomy=taxonomy,
-        target_wrong_queue_rate=float(optimization_cfg.get("target_wrong_queue_rate", 0.05)),
-        target_sensitive_case_recall=float(optimization_cfg.get("target_sensitive_case_recall", 0.95)),
+        target_wrong_queue_rate=float(
+            optimization_cfg.get("target_wrong_queue_rate", 0.05)
+        ),
+        target_sensitive_case_recall=float(
+            optimization_cfg.get("target_sensitive_case_recall", 0.95)
+        ),
         min_coverage_floor=float(optimization_cfg.get("min_coverage_floor", 0.65)),
-        max_entropy=float(runtime_cfg.get("max_entropy", 3.80)),
+        max_entropy=float(fixed_cfg.get("max_entropy", 3.80)),
         scope_guard=scope_guard,
-        minimum_sensitive_signal=float(sensitive_cfg.get("minimum_signal_probability", 0.16)),
-        minimum_scope_sensitive_signal=float(sensitive_cfg.get("minimum_scope_signal", 0.30)),
+        minimum_sensitive_signal=float(
+            sensitive_cfg.get("minimum_signal_probability", 0.16)
+        ),
+        minimum_scope_sensitive_signal=float(
+            sensitive_cfg.get("minimum_scope_signal", 0.30)
+        ),
     )
 
     chosen_queue_threshold = float(policy_opt["selected_queue_threshold"])
@@ -234,18 +266,26 @@ def train_and_optimize(
             "queue_probability": chosen_queue_threshold,
             "queue_margin": float(policy_opt["selected_queue_margin"]),
             "sensitive_probability": chosen_sensitive_threshold,
-            "min_margin": float(runtime_cfg.get("min_margin", 0.02)),
-            "max_entropy": float(runtime_cfg.get("max_entropy", 3.80)),
+            "min_margin": float(fixed_cfg.get("min_margin", 0.02)),
+            "max_entropy": float(fixed_cfg.get("max_entropy", 3.80)),
         },
         "sensitive_case": {
-            "minimum_signal_probability": float(sensitive_cfg.get("minimum_signal_probability", 0.16)),
-            "minimum_scope_signal": float(sensitive_cfg.get("minimum_scope_signal", 0.30)),
+            "minimum_signal_probability": float(
+                sensitive_cfg.get("minimum_signal_probability", 0.16)
+            ),
+            "minimum_scope_signal": float(
+                sensitive_cfg.get("minimum_scope_signal", 0.30)
+            ),
         },
         "scope": {
             "min_chars": int(scope_cfg.get("min_chars", 4)),
             "min_tokens": int(scope_cfg.get("min_tokens", 2)),
-            "lexical_similarity_threshold": float(scope_cfg.get("lexical_similarity_threshold", 0.08)),
-            "low_confidence_threshold": float(scope_cfg.get("low_confidence_threshold", 0.22)),
+            "lexical_similarity_threshold": float(
+                scope_cfg.get("lexical_similarity_threshold", 0.08)
+            ),
+            "low_confidence_threshold": float(
+                scope_cfg.get("low_confidence_threshold", 0.22)
+            ),
             "unsupported_threshold": scope_threshold,
         },
     }
@@ -292,6 +332,8 @@ def train_and_optimize(
         },
         "data_quality": data_quality,
     }
-    (report_path / "validation_metrics.json").write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    (report_path / "validation_metrics.json").write_text(
+        json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
     LOGGER.info("Đã lưu artifact canonical và báo cáo validation.")
     return report

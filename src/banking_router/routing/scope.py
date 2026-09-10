@@ -3,18 +3,92 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
-STOPWORDS = frozenset({
-    "i", "me", "my", "we", "our", "you", "your", "he", "his", "she", "her",
-    "it", "they", "them", "this", "that", "what", "which", "who", "why", "how",
-    "is", "are", "was", "were", "be", "been", "have", "has", "had", "do", "does",
-    "did", "a", "an", "the", "and", "but", "or", "because", "as", "of", "at", "by",
-    "for", "with", "about", "to", "from", "in", "out", "on", "off", "over", "under",
-    "when", "where", "all", "any", "both", "each", "more", "most", "some", "no", "not",
-    "only", "same", "so", "than", "too", "very", "can", "will", "just", "should", "now",
-    "please", "help",
-})
+STOPWORDS = frozenset(
+    {
+        "i",
+        "me",
+        "my",
+        "we",
+        "our",
+        "you",
+        "your",
+        "he",
+        "his",
+        "she",
+        "her",
+        "it",
+        "they",
+        "them",
+        "this",
+        "that",
+        "what",
+        "which",
+        "who",
+        "why",
+        "how",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "have",
+        "has",
+        "had",
+        "do",
+        "does",
+        "did",
+        "a",
+        "an",
+        "the",
+        "and",
+        "but",
+        "or",
+        "because",
+        "as",
+        "of",
+        "at",
+        "by",
+        "for",
+        "with",
+        "about",
+        "to",
+        "from",
+        "in",
+        "out",
+        "on",
+        "off",
+        "over",
+        "under",
+        "when",
+        "where",
+        "all",
+        "any",
+        "both",
+        "each",
+        "more",
+        "most",
+        "some",
+        "no",
+        "not",
+        "only",
+        "same",
+        "so",
+        "than",
+        "too",
+        "very",
+        "can",
+        "will",
+        "just",
+        "should",
+        "now",
+        "please",
+        "help",
+    }
+)
 
 
 class ScopeGuard:
@@ -48,8 +122,7 @@ class ScopeGuard:
     def set_scope_classifier(self, classifier: Any | None) -> None:
         self.scope_classifier = classifier
 
-    def detect(self, text: str, confidence: float, margin: float | None = None) -> tuple[bool, list[str]]:
-        del margin
+    def detect(self, text: str, confidence: float) -> tuple[bool, list[str]]:
         clean_text = text.strip()
         tokens = re.findall(r"\b\w+\b", clean_text.lower())
 
@@ -67,7 +140,9 @@ class ScopeGuard:
 
         if self.scope_classifier is not None:
             try:
-                unsupported = float(self.scope_classifier.unsupported_probability(clean_text))
+                unsupported = float(
+                    self.scope_classifier.unsupported_probability(clean_text)
+                )
             except AttributeError:
                 probabilities = self.scope_classifier.predict_proba([clean_text])[0]
                 classes = list(self.scope_classifier.classes_)
@@ -80,8 +155,12 @@ class ScopeGuard:
         if self.vocabulary:
             if not content_tokens and confidence < 0.60:
                 return True, ["OUT_OF_SCOPE_QUERY"]
-            known_content = [token for token in content_tokens if token in self.vocabulary]
-            content_ratio = len(known_content) / len(content_tokens) if content_tokens else 0.0
+            known_content = [
+                token for token in content_tokens if token in self.vocabulary
+            ]
+            content_ratio = (
+                len(known_content) / len(content_tokens) if content_tokens else 0.0
+            )
             if content_ratio == 0.0 and low_confidence:
                 return True, ["OUT_OF_SCOPE_QUERY"]
             if content_ratio < self.lexical_similarity_threshold and low_confidence:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+
 import numpy as np
 
 
@@ -20,16 +21,18 @@ def compute_risk_coverage_curve(
         accepted = confidences >= t
         coverage = float(accepted.mean())
         risk = float(1.0 - corrects[accepted].mean()) if accepted.any() else 0.0
-        curve_points.append({
-            "threshold": round(float(t), 4),
-            "coverage": round(coverage, 4),
-            "risk": round(risk, 4),
-        })
+        curve_points.append(
+            {
+                "threshold": round(float(t), 4),
+                "coverage": round(coverage, 4),
+                "risk": round(risk, 4),
+            }
+        )
         covs.append(coverage)
         risks.append(risk)
 
     # Sắp xếp coverage tăng dần để tích phân hình thang.
-    sorted_pairs = sorted(zip(covs, risks), key=lambda p: p[0])
+    sorted_pairs = sorted(zip(covs, risks, strict=True), key=lambda p: p[0])
     sorted_covs = np.array([p[0] for p in sorted_pairs])
     sorted_risks = np.array([p[1] for p in sorted_pairs])
     aurc = (

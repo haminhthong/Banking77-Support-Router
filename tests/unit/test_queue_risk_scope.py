@@ -1,7 +1,6 @@
 """Kiểm thử hồi quy cho queue projection, sensitive mass và scope."""
 
 import numpy as np
-
 from src.banking_router.data.contracts import BANKING77_77_CLASSES
 from src.banking_router.routing.escalation import SensitiveIntentGuard
 from src.banking_router.routing.policy import RoutingPolicy
@@ -21,13 +20,20 @@ class MockModel:
 
 def test_queue_probability_is_aggregated_across_intents():
     probabilities = np.zeros(len(BANKING77_77_CLASSES))
-    for intent, value in {"pending_transfer": 0.32, "receiving_money": 0.28, "transfer_timing": 0.20, "card_arrival": 0.20}.items():
+    for intent, value in {
+        "pending_transfer": 0.32,
+        "receiving_money": 0.28,
+        "transfer_timing": 0.20,
+        "card_arrival": 0.20,
+    }.items():
         probabilities[BANKING77_77_CLASSES.index(intent)] = value
     taxonomy = TaxonomyResolver()
     model = MockModel(probabilities)
     service = RoutingService(
         model=model,
-        policy=RoutingPolicy(queue_threshold=0.75, queue_margin=0.10, taxonomy_resolver=taxonomy),
+        policy=RoutingPolicy(
+            queue_threshold=0.75, queue_margin=0.10, taxonomy_resolver=taxonomy
+        ),
         sensitive_guard=SensitiveIntentGuard(model.classes_, taxonomy=taxonomy),
         taxonomy=taxonomy,
     )
@@ -42,7 +48,9 @@ def test_sensitive_guard_uses_probability_mass_not_only_top_class():
     probabilities[BANKING77_77_CLASSES.index("compromised_card")] = 0.19
     probabilities[BANKING77_77_CLASSES.index("lost_or_stolen_card")] = 0.18
     probabilities[BANKING77_77_CLASSES.index("card_arrival")] = 0.63
-    guard = SensitiveIntentGuard(BANKING77_77_CLASSES, taxonomy=TaxonomyResolver(), sensitive_trigger=0.36)
+    guard = SensitiveIntentGuard(
+        BANKING77_77_CLASSES, taxonomy=TaxonomyResolver(), sensitive_trigger=0.36
+    )
     assessment = guard.assess(probabilities)
     assert assessment.requires_priority_review is True
     assert abs(assessment.sensitive_probability_mass - 0.37) < 1e-6
@@ -50,10 +58,15 @@ def test_sensitive_guard_uses_probability_mass_not_only_top_class():
 
 
 def test_scope_guard_allows_confident_typo():
-    guard = ScopeGuard(vocabulary={"transfer", "pending"}, low_confidence_threshold=0.22)
+    guard = ScopeGuard(
+        vocabulary={"transfer", "pending"}, low_confidence_threshold=0.22
+    )
     assert guard.detect("my trasfer is pendng", confidence=0.65) == (False, [])
 
 
 def test_scope_guard_rejects_unknown_low_confidence_query():
     guard = ScopeGuard(vocabulary={"card", "transfer"}, low_confidence_threshold=0.22)
-    assert guard.detect("mortgage refinancing advice", confidence=0.10) == (True, ["OUT_OF_SCOPE_QUERY"])
+    assert guard.detect("mortgage refinancing advice", confidence=0.10) == (
+        True,
+        ["OUT_OF_SCOPE_QUERY"],
+    )

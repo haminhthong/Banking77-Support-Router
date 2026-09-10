@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 from typing import Any
+
 import numpy as np
 from sklearn.metrics import log_loss
+
+from ..evaluation.metrics import expected_calibration_error
 
 
 def _softmax(logits: np.ndarray, temperature: float) -> np.ndarray:
@@ -39,13 +42,17 @@ class TemperatureScaledModel:
         return self.classes_[probabilities.argmax(axis=1)]
 
 
-def fit_temperature(base_model: Any, texts: Any, targets: Any) -> TemperatureScaledModel:
+def fit_temperature(
+    base_model: Any, texts: Any, targets: Any
+) -> TemperatureScaledModel:
     """Ước lượng một nhiệt độ dương trên calibration split tách riêng."""
     logits = np.asarray(base_model.decision_function(texts), dtype=float)
     if logits.ndim == 1:
         logits = np.column_stack([-logits, logits])
     classes = np.asarray(base_model.classes_)
-    target_indices = np.asarray([int(np.where(classes == target)[0][0]) for target in targets])
+    target_indices = np.asarray(
+        [int(np.where(classes == target)[0][0]) for target in targets]
+    )
 
     # Tìm kiếm một chiều trong khoảng giới hạn, phù hợp với 77 lớp và không
     # tạo thêm một model có một tham số riêng cho từng lớp.
@@ -53,7 +60,21 @@ def fit_temperature(base_model: Any, texts: Any, targets: Any) -> TemperatureSca
     losses = []
     for temperature in candidates:
         probabilities = _softmax(logits, float(temperature))
-        losses.append(float(-np.mean(np.log(np.clip(probabilities[np.arange(len(target_indices)), target_indices], 1e-12, 1.0)))))
+        losses.append(
+            float(
+                -np.mean(
+                    np.log(
+                        np.clip(
+                            probabilities[
+                                np.arange(len(target_indices)), target_indices
+                            ],
+                            1e-12,
+                            1.0,
+                        )
+                    )
+                )
+            )
+        )
     best_temperature = float(candidates[int(np.argmin(losses))])
     return TemperatureScaledModel(base_model, temperature=best_temperature)
 
@@ -66,23 +87,24 @@ def select_probability_model(
 ) -> tuple[Any, dict[str, Any]]:
     """Chọn xác suất raw hoặc đã hiệu chuẩn trên validation split."""
     classes = np.asarray(raw_model.classes_)
-    target_indices = np.asarray([int(np.where(classes == target)[0][0]) for target in targets])
+    target_indices = np.asarray(
+        [int(np.where(classes == target)[0][0]) for target in targets]
+    )
 
     def metrics(model: Any) -> dict[str, float]:
         probabilities = np.asarray(model.predict_proba(texts), dtype=float)
         confidence = probabilities.max(axis=1)
         predictions = classes[probabilities.argmax(axis=1)]
-        correct = (predictions == np.asarray(targets)).astype(float)
-        ece = 0.0
-        bins = np.linspace(0.0, 1.0, 11)
-        for lower, upper in zip(bins[:-1], bins[1:]):
-            mask = (confidence >= lower) & (confidence < upper)
-            if mask.any():
-                ece += float(mask.mean()) * abs(float(correct[mask].mean()) - float(confidence[mask].mean()))
+        targets_array = np.asarray(targets)
+        ece = expected_calibration_error(confidence, predictions, targets_array)
         one_hot = np.zeros_like(probabilities)
         one_hot[np.arange(len(target_indices)), target_indices] = 1.0
         brier = float(np.mean(np.sum((probabilities - one_hot) ** 2, axis=1)))
-        return {"nll": float(log_loss(targets, probabilities, labels=classes)), "ece": ece, "brier": brier}
+        return {
+            "nll": float(log_loss(targets, probabilities, labels=classes)),
+            "ece": ece,
+            "brier": brier,
+        }
 
     raw_metrics = metrics(raw_model)
     candidate_metrics = metrics(calibrated_candidate)
