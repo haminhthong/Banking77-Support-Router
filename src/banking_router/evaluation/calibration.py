@@ -1,4 +1,4 @@
-"""Probability calibration evaluation: ECE, Multi-class Brier score, and Log-loss."""
+"""Đánh giá hiệu chuẩn xác suất bằng ECE, Brier đa lớp và log-loss."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from ..modeling.training import calculate_ece
 def compute_multiclass_brier_score(
     probabilities: np.ndarray, targets: np.ndarray, classes: np.ndarray
 ) -> float:
-    """Compute Multi-class Brier Score = mean(sum((p_c - y_c)^2))."""
+    """Tính Brier đa lớp = mean(sum((p_c - y_c)^2))."""
     class_to_idx = {c: i for i, c in enumerate(classes)}
     n_samples = len(targets)
     n_classes = len(classes)
@@ -32,7 +32,7 @@ def evaluate_calibration(
     probabilities: np.ndarray,
     classes: np.ndarray,
 ) -> dict[str, Any]:
-    """Compute calibration metrics on test data."""
+    """Tính các metric hiệu chuẩn trên dữ liệu test."""
     ece = calculate_ece(confidences, predictions, targets)
     loss = float(log_loss(targets, probabilities, labels=classes))
     brier = compute_multiclass_brier_score(probabilities, targets, classes)

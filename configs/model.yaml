@@ -1,4 +1,4 @@
-# ML Classifier and Calibration Pipeline Configuration
+# Cấu hình classifier và pipeline hiệu chuẩn.
 
 seed: 42
 

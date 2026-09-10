@@ -18,7 +18,7 @@ from .taxonomy import TaxonomyResolver
 
 
 class RoutingService:
-    """Chạy normalize -> model -> queue/scope/sensitive checks -> policy."""
+    """Chạy normalize -> model -> kiểm tra queue/scope/nhạy cảm -> policy."""
 
     def __init__(
         self,
@@ -111,7 +111,7 @@ class RoutingService:
         )
 
     def route(self, text: str, top_k: int = 3, request_id: str | None = None) -> RoutingResult:
-        """Route một ticket sau khi áp dụng cùng normalization với training."""
+        """Route một ticket sau khi áp dụng cùng chuẩn hóa như lúc train."""
         started = time.perf_counter()
         normalized = normalize_pii_semantically(text)
         probabilities = self.model.predict_proba([normalized])[0]

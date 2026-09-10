@@ -1,4 +1,4 @@
-"""Invariant tests cho luồng xác suất và routing policy."""
+"""Kiểm thử invariant cho luồng xác suất và routing policy."""
 
 import numpy as np
 

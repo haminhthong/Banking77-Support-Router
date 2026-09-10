@@ -1,4 +1,4 @@
-"""Structured event recording and human feedback persistence."""
+"""Ghi sự kiện routing và lưu kết quả human review."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ def record_routing_event(
     result: Any,
     latency_ms: float = 0.0,
 ) -> None:
-    """Record anonymized routing event for audit and telemetry."""
+    """Ghi sự kiện routing đã ẩn PII để phân tích."""
     path = Path(event_file)
     path.parent.mkdir(parents=True, exist_ok=True)
 

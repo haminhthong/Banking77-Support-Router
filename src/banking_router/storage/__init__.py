@@ -1,1 +1,1 @@
-"""Small durable ticket/review store used by the portfolio service."""
+"""Kho SQLite nhỏ để lưu ticket và kết quả review."""

@@ -1,4 +1,4 @@
-"""Regression tests cho queue projection, sensitive mass và scope."""
+"""Kiểm thử hồi quy cho queue projection, sensitive mass và scope."""
 
 import numpy as np
 

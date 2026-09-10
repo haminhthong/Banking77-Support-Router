@@ -1,4 +1,4 @@
-"""Privacy protection and PII redaction layer for telemetry and logs."""
+"""Che PII trước khi ghi log hoặc lưu sự kiện."""
 
 from __future__ import annotations
 
@@ -13,5 +13,5 @@ _ACCOUNT_REGEX = re.compile(r"\b(?:acc|account|ibans?)\s*[:#]?\s*([a-zA-Z0-9]{8,
 
 
 def redact_pii(text: str) -> str:
-    """Mask sensitive banking and personal customer identifiers."""
+    """Che các định danh ngân hàng và thông tin cá nhân của khách hàng."""
     return normalize_pii_semantically(text)

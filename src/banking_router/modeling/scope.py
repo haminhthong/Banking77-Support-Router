@@ -43,7 +43,7 @@ def train_scope_classifier(
     unsupported_texts: Sequence[str],
     seed: int = 42,
 ) -> ScopeClassifier:
-    """Huấn luyện scope model từ dữ liệu Banking77 và tập OOS có nhãn."""
+    """Huấn luyện model phạm vi từ dữ liệu Banking77 và tập ngoài phạm vi có nhãn."""
     texts = [normalize_pii_semantically(text) for text in supported_texts]
     texts.extend(normalize_pii_semantically(text) for text in unsupported_texts)
     labels = np.array([SUPPORTED] * len(supported_texts) + [UNSUPPORTED] * len(unsupported_texts))

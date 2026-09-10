@@ -18,17 +18,16 @@ _ACCOUNT_REGEX = re.compile(
 
 
 def normalize_whitespace(text: str) -> str:
-    """Normalize basic whitespace without mutating characters or punctuation."""
+    """Chuẩn hóa khoảng trắng mà không đổi ký tự hoặc dấu câu."""
     return re.sub(r"\s+", " ", str(text)).strip()
 
 
 def normalize_pii_semantically(text: str) -> str:
-    """Normalize PII to semantic placeholders before model inference.
+    """Đổi PII thành placeholder ngữ nghĩa trước khi model suy luận.
 
-    The noun introducing an identifier is intentionally retained (``account``
-    rather than only ``[REDACTED]``), so the transformation removes leakage
-    without removing banking meaning.  This function is shared by training and
-    serving to prevent normalization skew.
+    Giữ lại danh từ đứng trước định danh (``account`` thay vì chỉ dùng
+    ``[REDACTED]``) để loại rò rỉ nhưng không làm mất nghĩa ngân hàng. Hàm này
+    được dùng chung cho train và serving để tránh lệch chuẩn hóa.
     """
     normalized = unicodedata.normalize("NFKC", str(text))
     normalized = _CARD_REGEX.sub("[CARD_NUMBER]", normalized)
@@ -41,10 +40,10 @@ def normalize_pii_semantically(text: str) -> str:
 
 
 def normalize_text_for_audit(text: str) -> str:
-    """NFKC-normalize, lowercase, remove punctuation and collapse whitespace.
+    """Chuẩn hóa NFKC, viết thường, bỏ dấu câu và gom khoảng trắng.
 
-    Used specifically for semantic fingerprinting in cross-split leakage
-    and conflicting-label audits.
+    Hàm dùng để tạo fingerprint ngữ nghĩa khi kiểm tra rò rỉ giữa split và
+    xung đột nhãn.
     """
     text = unicodedata.normalize("NFKC", str(text).lower().strip())
     text = re.sub(r"[^\w\s]", "", text)

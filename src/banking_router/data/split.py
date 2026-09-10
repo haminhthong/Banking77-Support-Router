@@ -1,4 +1,4 @@
-"""Dataset split protocols with dual benchmark support: Official vs Strict Decontaminated."""
+"""Quy trình chia dữ liệu cho benchmark chính thức và benchmark đã khử trùng."""
 
 from __future__ import annotations
 
@@ -17,47 +17,46 @@ def load_training_splits(
     seed: int = 42,
     benchmark: Literal["official", "strict_decontaminated"] = "official",
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Split dataset into 4 distinct roles:
-    - Train (70%): Feature representation & classifier fitting.
-    - Calibration (15%): Fit a temperature candidate only.
-    - Threshold Validation (15%): Select raw vs temperature and optimize queue/sensitive-case policy.
-    - Test: Untouched test benchmark (3,080 samples).
+    """Chia dữ liệu thành bốn vai trò độc lập:
+    - Train (70%): học biểu diễn đặc trưng và classifier.
+    - Calibration (15%): ước lượng nhiệt độ hiệu chuẩn.
+    - Threshold Validation (15%): chọn xác suất và threshold routing.
+    - Test: tập chuẩn không chỉnh sửa (3.080 mẫu).
 
-    Benchmarks:
-    1. 'official': Uses published train.csv (cleaned of internal duplicates) and untouched test.csv.
-       Preserves the published Banking77 split for standard external comparisons.
-    2. 'strict_decontaminated': Purges any training/holdout examples that share normalized
-       text fingerprints with the test set BEFORE splitting, guaranteeing 100% leak-free development.
+    Benchmark:
+    1. ``official``: dùng train.csv đã làm sạch bản ghi trùng nội bộ và test.csv nguyên bản.
+    2. ``strict_decontaminated``: loại mẫu train/holdout có fingerprint chuẩn hóa trùng
+       với test trước khi chia tiếp, giúp kiểm soát rò rỉ dữ liệu trong phát triển.
     """
     train_path = Path(raw_dir) / "train.csv"
     if not train_path.exists():
         raise FileNotFoundError(f"Missing train dataset: {train_path}")
 
-    # 1. Read raw train & normalize whitespace
+    # 1. Đọc train thô và chuẩn hóa text.
     raw_train = read_raw_dataset(train_path)
     norm_train = normalize_dataset(raw_train)
 
-    # 2. Audit conflicts on raw normalized data BEFORE deduplicating
+    # 2. Audit xung đột trên dữ liệu đã chuẩn hóa trước khi loại bản ghi trùng.
     audit_res = audit_dataset(norm_train)
     if audit_res["conflicting_label_count"] > 0:
         raise ValueError(
             f"Pre-dedup audit detected conflicting labels in train.csv: {audit_res['conflicts']}"
         )
 
-    # 3. Clean and deduplicate development pool
+    # 3. Làm sạch và loại trùng trong pool phát triển.
     clean_train_pool = clean_dataset(norm_train)
 
-    # 4. Load untouched official test benchmark (exactly 3,080 rows)
+    # 4. Đọc tập test chính thức không chỉnh sửa (đúng 3.080 dòng).
     test = load_official_test(raw_dir)
 
-    # 5. Apply decontaminated filtering if requested
+    # 5. Lọc khử trùng nếu benchmark được yêu cầu.
     if benchmark == "strict_decontaminated":
         test_fingerprints = set(test["text"].apply(normalize_text_for_audit))
         clean_train_pool["_fp"] = clean_train_pool["text"].apply(normalize_text_for_audit)
         leaked_mask = clean_train_pool["_fp"].isin(test_fingerprints)
         clean_train_pool = clean_train_pool[~leaked_mask].drop(columns=["_fp"]).reset_index(drop=True)
 
-    # 6. Stratified Split: 70% Train, 30% Holdout
+    # 6. Chia phân tầng: 70% train và 30% holdout.
     train, holdout = train_test_split(
         clean_train_pool,
         test_size=0.30,
@@ -65,7 +64,7 @@ def load_training_splits(
         stratify=clean_train_pool["intent"],
     )
 
-    # 7. Stratified Split of Holdout: 15% Calibration, 15% Threshold Validation
+    # 7. Chia phân tầng holdout: 15% calibration và 15% threshold validation.
     calibration, threshold_validation = train_test_split(
         holdout,
         test_size=0.50,
@@ -87,7 +86,7 @@ def summarize_split_quality(
     threshold_val: pd.DataFrame,
     test: pd.DataFrame,
 ) -> dict[str, Any]:
-    """Verify Data Quality Contract across all 4 splits."""
+    """Tổng hợp các kiểm tra chất lượng trên cả bốn split."""
     splits = {
         "train": set(train["text"]),
         "calibration": set(calibration["text"]),
@@ -141,7 +140,7 @@ def summarize_split_quality(
         "missing_test_labels": sorted(set(test["intent"]) - train_labels),
         "exact_pairwise_overlap": exact_pairwise_overlap,
         "normalized_pairwise_overlap": normalized_pairwise_overlap,
-        # Keep pairwise_text_overlap for backward compatibility with existing reports
+        # Giữ tên khóa này để các báo cáo hiện có vẫn đọc được kết quả overlap.
         "pairwise_text_overlap": exact_pairwise_overlap,
         "conflicting_labels": {
             "train_conflict_count": len(conflicts_train),

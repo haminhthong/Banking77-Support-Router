@@ -1,10 +1,10 @@
-"""Data contracts, 77-class taxonomy definition, and domain projection constants."""
+"""Hợp đồng dữ liệu, taxonomy 77 lớp và ánh xạ domain."""
 
 from __future__ import annotations
 
 from typing import Any
 
-# Standard 77 BANKING77 Intent Classes in lexicographical order
+# Danh sách chuẩn 77 intent BANKING77 theo thứ tự từ điển.
 BANKING77_77_CLASSES: list[str] = sorted(
     [
         "Refund_not_showing_up",
@@ -87,9 +87,9 @@ BANKING77_77_CLASSES: list[str] = sorted(
     ]
 )
 
-# Explicit 77-to-10 Domain Mapping
+# Ánh xạ tường minh từ 77 intent sang 10 domain.
 INTENT_TO_DOMAIN: dict[str, str] = {
-    # 1. card_services (17 intents)
+    # 1. card_services (17 intent)
     "activate_my_card": "card_services",
     "card_about_to_expire": "card_services",
     "card_acceptance": "card_services",
@@ -107,7 +107,7 @@ INTENT_TO_DOMAIN: dict[str, str] = {
     "supported_cards_and_currencies": "card_services",
     "virtual_card_not_working": "card_services",
     "visa_or_mastercard": "card_services",
-    # 2. atm_cash (9 intents)
+    # 2. atm_cash (9 intent)
     "atm_support": "atm_cash",
     "balance_not_updated_after_cheque_or_cash_deposit": "atm_cash",
     "card_swallowed": "atm_cash",
@@ -117,7 +117,7 @@ INTENT_TO_DOMAIN: dict[str, str] = {
     "pending_cash_withdrawal": "atm_cash",
     "wrong_amount_of_cash_received": "atm_cash",
     "wrong_exchange_rate_for_cash_withdrawal": "atm_cash",
-    # 3. account_security (10 intents)
+    # 3. account_security (10 intent)
     "change_pin": "account_security",
     "compromised_card": "account_security",
     "lost_or_stolen_card": "account_security",
@@ -128,7 +128,7 @@ INTENT_TO_DOMAIN: dict[str, str] = {
     "verify_my_identity": "account_security",
     "verify_source_of_funds": "account_security",
     "why_verify_identity": "account_security",
-    # 4. transfers_payments (12 intents)
+    # 4. transfers_payments (12 intent)
     "balance_not_updated_after_bank_transfer": "transfers_payments",
     "beneficiary_not_allowed": "transfers_payments",
     "cancel_transfer": "transfers_payments",
@@ -141,7 +141,7 @@ INTENT_TO_DOMAIN: dict[str, str] = {
     "transfer_into_account": "transfers_payments",
     "transfer_not_received_by_recipient": "transfers_payments",
     "transfer_timing": "transfers_payments",
-    # 5. topup_recharge (10 intents)
+    # 5. topup_recharge (10 intent)
     "automatic_top_up": "topup_recharge",
     "pending_top_up": "topup_recharge",
     "top_up_by_bank_transfer_charge": "topup_recharge",
@@ -152,7 +152,7 @@ INTENT_TO_DOMAIN: dict[str, str] = {
     "top_up_reverted": "topup_recharge",
     "topping_up_by_card": "topup_recharge",
     "verify_top_up": "topup_recharge",
-    # 6. transactions_refunds (10 intents)
+    # 6. transactions_refunds (10 intent)
     "Refund_not_showing_up": "transactions_refunds",
     "card_payment_fee_charged": "transactions_refunds",
     "card_payment_not_recognised": "transactions_refunds",
@@ -163,12 +163,12 @@ INTENT_TO_DOMAIN: dict[str, str] = {
     "request_refund": "transactions_refunds",
     "reverted_card_payment?": "transactions_refunds",
     "transaction_charged_twice": "transactions_refunds",
-    # 7. fees_rates (4 intents)
+    # 7. fees_rates (4 intent)
     "exchange_charge": "fees_rates",
     "exchange_rate": "fees_rates",
     "exchange_via_app": "fees_rates",
     "fiat_currency_support": "fees_rates",
-    # 8. account_management (3 intents)
+    # 8. account_management (3 intent)
     "age_limit": "account_management",
     "edit_personal_details": "account_management",
     "terminate_account": "account_management",
@@ -184,5 +184,5 @@ assert set(INTENT_TO_DOMAIN.keys()) == set(
 
 
 def get_domain_for_intent(intent: str) -> str:
-    """Map fine-grained intent to higher-level business domain."""
+    """Ánh xạ intent chi tiết sang domain nghiệp vụ cấp cao hơn."""
     return INTENT_TO_DOMAIN.get(intent.strip(), "general_banking")

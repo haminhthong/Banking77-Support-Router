@@ -1,4 +1,4 @@
-"""Selective classification metrics and Risk-Coverage curve analysis."""
+"""Metric selective classification và phân tích đường cong risk-coverage."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import numpy as np
 def compute_risk_coverage_curve(
     confidences: np.ndarray, corrects: np.ndarray, num_points: int = 100
 ) -> dict[str, Any]:
-    """Compute Risk-Coverage Curve and calculate Area Under Risk-Coverage Curve (AURC)."""
+    """Tính đường cong risk-coverage và diện tích AURC."""
     thresholds = np.linspace(0.0, 1.0, num_points)
     curve_points: list[dict[str, float]] = []
 
@@ -28,7 +28,7 @@ def compute_risk_coverage_curve(
         covs.append(coverage)
         risks.append(risk)
 
-    # Sort by coverage ascending for trapezoidal integration
+    # Sắp xếp coverage tăng dần để tích phân hình thang.
     sorted_pairs = sorted(zip(covs, risks), key=lambda p: p[0])
     sorted_covs = np.array([p[0] for p in sorted_pairs])
     sorted_risks = np.array([p[1] for p in sorted_pairs])
@@ -59,7 +59,7 @@ def evaluate_selective_metrics(
     corrects: np.ndarray,
     threshold: float,
 ) -> dict[str, Any]:
-    """Model-level selective classification metrics strictly based on confidence threshold."""
+    """Tính metric selective classification theo confidence threshold."""
     accepted = confidences >= threshold
     coverage = float(accepted.mean())
     risk = float(1.0 - corrects[accepted].mean()) if accepted.any() else 0.0

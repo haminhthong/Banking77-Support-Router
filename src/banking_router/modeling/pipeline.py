@@ -1,4 +1,4 @@
-"""Pipeline building blocks for TF-IDF feature extraction and linear classification."""
+"""Các khối xây dựng TF-IDF và classifier tuyến tính."""
 
 from __future__ import annotations
 
@@ -16,13 +16,12 @@ def build_pipeline(
     c_param: float = 4.0,
     max_iter: int = 1200,
 ) -> tuple[Pipeline, dict[str, Any]]:
-    """Build canonical classification pipeline with word and character n-gram robustness.
+    """Tạo pipeline phân loại chuẩn với word n-gram và character n-gram.
 
-    Character n-grams ('char_wb') provide resilience against banking typos,
-    abbreviations, and slight phrasing variations while maintaining sub-millisecond CPU latency.
+    Character n-gram ``char_wb`` giúp mô hình ít nhạy với lỗi gõ, viết tắt
+    và khác biệt nhỏ trong cách diễn đạt.
     """
-    # New callers pass the resolved YAML payload.  Legacy keyword arguments
-    # remain supported for notebooks and older scripts.
+    # Nếu không có YAML, dùng các giá trị mặc định của hàm.
     cfg = model_config or {}
     features_cfg = cfg.get("features", {})
     word_cfg = dict(features_cfg.get("word", features_cfg.get("tfidf", {})))

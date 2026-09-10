@@ -1,4 +1,4 @@
-"""Integration test cho artifact canonical, service và FastAPI."""
+"""Kiểm thử tích hợp artifact chuẩn, service và FastAPI."""
 
 import numpy as np
 from fastapi.testclient import TestClient

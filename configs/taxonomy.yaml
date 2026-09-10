@@ -1,7 +1,7 @@
-# Exact 77-class Banking77 Taxonomy, Domain Projections, and Queue Routing Definitions
+# Taxonomy đúng 77 lớp Banking77, ánh xạ domain và định nghĩa queue routing.
 
 intents:
-  # 1. card_services (17 intents)
+  # 1. card_services (17 intent)
   activate_my_card:
     domain: card_services
     queue: card_operations
@@ -71,7 +71,7 @@ intents:
     queue: card_operations
     priority: normal
 
-  # 2. atm_cash (9 intents)
+  # 2. atm_cash (9 intent)
   atm_support:
     domain: atm_cash
     queue: atm_support_queue
@@ -121,7 +121,7 @@ intents:
     queue: fee_inquiry_queue
     priority: normal
 
-  # 3. account_security (10 intents)
+  # 3. account_security (10 intent)
   change_pin:
     domain: account_security
     queue: security_support_queue
@@ -175,7 +175,7 @@ intents:
     queue: kyc_compliance_queue
     priority: normal
 
-  # 4. transfers_payments (12 intents)
+  # 4. transfers_payments (12 intent)
   balance_not_updated_after_bank_transfer:
     domain: transfers_payments
     queue: transfer_investigation_queue
@@ -229,7 +229,7 @@ intents:
     queue: transfers_queue
     priority: normal
 
-  # 5. topup_recharge (10 intents)
+  # 5. topup_recharge (10 intent)
   automatic_top_up:
     domain: topup_recharge
     queue: topup_support_queue
@@ -271,7 +271,7 @@ intents:
     queue: topup_support_queue
     priority: normal
 
-  # 6. transactions_refunds (10 intents)
+  # 6. transactions_refunds (10 intent)
   Refund_not_showing_up:
     domain: transactions_refunds
     queue: refund_investigation_queue
@@ -317,7 +317,7 @@ intents:
     queue: payment_investigation_queue
     priority: high
 
-  # 7. fees_rates (4 intents)
+  # 7. fees_rates (4 intent)
   exchange_charge:
     domain: fees_rates
     queue: fee_inquiry_queue
@@ -335,7 +335,7 @@ intents:
     queue: fee_inquiry_queue
     priority: normal
 
-  # 8. account_management (3 intents)
+  # 8. account_management (3 intent)
   age_limit:
     domain: account_management
     queue: account_management_queue
@@ -361,13 +361,13 @@ intents:
     queue: international_support_queue
     priority: normal
 
-# Queue vận hành dùng cho fallback và escalation
+# Queue dùng cho fallback và chuyển sang human review.
 system_queues:
   priority_sensitive_case: sensitive_case_review_queue
   general_human_review: general_human_review_queue
   scope_review: general_human_review_queue
 
-# Queue review theo nhóm intent nhạy cảm
+# Queue review theo nhóm intent nhạy cảm.
 sensitive_groups:
   physical_card_security:
     review_queue: sensitive_case_review_queue

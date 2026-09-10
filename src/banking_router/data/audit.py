@@ -1,4 +1,4 @@
-"""Audit functions for label conflicts and duplicates prior to deduplication."""
+"""Kiểm tra xung đột nhãn và bản ghi trùng trước khi làm sạch dữ liệu."""
 
 from __future__ import annotations
 
@@ -8,13 +8,13 @@ from .normalization import normalize_text_for_audit
 
 
 def audit_conflicting_labels(df: pd.DataFrame) -> list[dict[str, Any]]:
-    """Detect queries that have identical text but conflicting intent labels.
+    """Phát hiện câu có cùng nội dung nhưng khác nhãn intent.
 
-    CRITICAL: Must be run on the raw/normalized dataset BEFORE any deduplication,
-    otherwise dropping duplicates will mask true label conflicts.
+    LƯU Ý: Phải chạy trên dữ liệu thô đã chuẩn hóa trước khi loại bản ghi trùng;
+    nếu làm ngược lại, bước loại trùng có thể che mất xung đột nhãn.
     """
     conflicts: list[dict[str, Any]] = []
-    # Group on exact stripped text
+    # Gom nhóm theo nội dung đã loại khoảng trắng thừa.
     grouped = df.groupby("text")["intent"].unique()
     for text, labels in grouped.items():
         if len(labels) > 1:
@@ -27,7 +27,7 @@ def audit_conflicting_labels(df: pd.DataFrame) -> list[dict[str, Any]]:
 
 
 def audit_normalized_duplicates(df: pd.DataFrame) -> list[dict[str, Any]]:
-    """Detect queries that resolve to the same normalized fingerprint with conflicting labels."""
+    """Phát hiện fingerprint chuẩn hóa trùng nhưng có các nhãn khác nhau."""
     temp_df = df.copy()
     temp_df["norm_text"] = temp_df["text"].apply(normalize_text_for_audit)
     grouped = temp_df.groupby("norm_text")["intent"].unique()
@@ -43,7 +43,7 @@ def audit_normalized_duplicates(df: pd.DataFrame) -> list[dict[str, Any]]:
 
 
 def audit_dataset(df: pd.DataFrame) -> dict[str, Any]:
-    """Comprehensive data quality audit report on uncleaned dataset."""
+    """Tạo báo cáo tổng hợp chất lượng trên dữ liệu chưa làm sạch."""
     total_rows = len(df)
     exact_duplicates = int(df.duplicated(subset=["text"]).sum())
     conflicts = audit_conflicting_labels(df)
@@ -67,14 +67,14 @@ def clean_dataset(
     df: pd.DataFrame,
     conflict_action: str = "error",
 ) -> pd.DataFrame:
-    """Clean dataset by resolving conflicts and removing exact duplicates AFTER auditing.
+    """Làm sạch dữ liệu sau khi audit bằng cách xử lý xung đột và loại bản ghi trùng.
 
-    Args:
-        df: Input DataFrame with 'text' and 'intent'.
-        conflict_action: 'error' (raise exception if conflicting labels exist) or 'drop_all'.
+    Tham số:
+        df: DataFrame đầu vào có cột ``text`` và ``intent``.
+        conflict_action: ``error`` để dừng khi có xung đột hoặc ``drop_all`` để loại toàn bộ câu xung đột.
 
-    Returns:
-        Deduplicated, clean DataFrame.
+    Kết quả:
+        DataFrame đã loại bản ghi trùng và đặt lại chỉ mục.
     """
     conflicts = audit_conflicting_labels(df)
     if conflicts:
@@ -87,7 +87,7 @@ def clean_dataset(
             conflict_texts = {c["text"] for c in conflicts}
             df = df[~df["text"].isin(conflict_texts)].copy()
 
-    # Drop exact duplicates and reset index
+    # Loại bản ghi trùng chính xác và đặt lại chỉ mục.
     cleaned = (
         df.dropna()
         .drop_duplicates(subset=["text"])

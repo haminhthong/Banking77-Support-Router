@@ -1,4 +1,4 @@
-"""Pydantic schemas cho API route ticket."""
+"""Schema Pydantic cho API route ticket."""
 
 from __future__ import annotations
 

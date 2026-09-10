@@ -1,4 +1,4 @@
-"""Tách dữ liệu scope theo split cố định, không dùng locked set để tune."""
+"""Tách dữ liệu scope theo split cố định, không dùng locked set để tối ưu."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Any
 
 
 def load_scope_splits(path: str | Path = "data/evaluation/ood.jsonl") -> dict[str, list[dict[str, Any]]]:
-    """Đọc OOS benchmark và tạo train/dev/locked theo thứ tự ổn định.
+    """Đọc benchmark ngoài phạm vi và tạo train/dev/locked theo thứ tự ổn định.
 
     Quy tắc tách deterministic giúp mọi lần train dùng cùng locked examples.
     Dev có thể dùng để chọn threshold; locked chỉ dùng báo cáo cuối.

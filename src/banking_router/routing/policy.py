@@ -1,4 +1,4 @@
-"""Routing policy dùng chung cho training, evaluation và FastAPI."""
+"""Routing policy dùng chung cho train, đánh giá và FastAPI."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from .taxonomy import TaxonomyResolver
 
 
 class RoutingPolicy:
-    """Thứ tự quyết định duy nhất: sensitive case -> scope -> uncertainty -> route."""
+    """Thứ tự duy nhất: ca nhạy cảm -> phạm vi -> độ không chắc chắn -> route."""
 
     def __init__(
         self,

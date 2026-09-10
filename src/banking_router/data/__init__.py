@@ -1,4 +1,4 @@
-"""Data module exports for Banking77 Support Router."""
+"""Các thành phần public của module dữ liệu Banking77 Support Router."""
 
 from .contracts import (
     BANKING77_77_CLASSES,

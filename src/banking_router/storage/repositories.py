@@ -1,4 +1,4 @@
-"""Repository operations for the ticket and reviewed-feedback lifecycle."""
+"""Các thao tác repository cho ticket và feedback đã review."""
 
 from __future__ import annotations
 

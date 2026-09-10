@@ -1,4 +1,4 @@
-"""Smoke tests cho calibration, PII và routing policy."""
+"""Kiểm thử nhanh cho calibration, PII và routing policy."""
 
 import numpy as np
 

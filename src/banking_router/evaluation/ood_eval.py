@@ -14,7 +14,7 @@ def evaluate_ood_benchmark(
     routing_service: RoutingService,
     split: str = "all",
 ) -> dict[str, Any]:
-    """Đánh giá scope trên tập ví dụ nhỏ, không gọi đây là benchmark robust."""
+    """Đánh giá scope trên tập ví dụ nhỏ, không gọi đây là benchmark đại diện."""
     path = Path(ood_file)
     if not path.exists():
         return {

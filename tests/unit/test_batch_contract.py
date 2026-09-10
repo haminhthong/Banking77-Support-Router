@@ -1,4 +1,4 @@
-"""Contract batch: top_k hiển thị riêng cho từng ticket."""
+"""Kiểm thử hợp đồng batch: top_k được áp dụng riêng cho từng ticket."""
 
 import numpy as np
 

@@ -1,4 +1,4 @@
-"""API package exports."""
+"""Các thành phần public của package API."""
 
 from .app import app, get_routing_service
 from .schemas import RouteRequest, RouteResponse, BatchRouteRequest, FeedbackRequest

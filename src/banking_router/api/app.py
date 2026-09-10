@@ -1,4 +1,4 @@
-"""FastAPI service cho inference và review feedback."""
+"""FastAPI service cho suy luận và review feedback."""
 
 from __future__ import annotations
 

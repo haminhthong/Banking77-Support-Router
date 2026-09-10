@@ -1,4 +1,4 @@
-"""Các unit test kiểm tra hợp đồng dữ liệu (Data Quality Contract) và tính toàn vẹn của Taxonomy."""
+"""Kiểm thử hợp đồng dữ liệu và tính nhất quán của taxonomy."""
 
 from pathlib import Path
 
@@ -33,7 +33,7 @@ def test_read_banking77_normalizes_columns_and_order(tmp_path: Path):
 
 
 def test_exact_77_intent_to_domain_taxonomy_complete():
-    """Bắt buộc toàn bộ 77 intent thật của BANKING77 phải có trong bảng taxonomy (CI Gate)."""
+    """Bắt buộc đủ 77 intent BANKING77 trong bảng taxonomy khi chạy CI."""
     assert len(BANKING77_77_CLASSES) == 77
     assert len(INTENT_TO_DOMAIN) == 77
     assert set(INTENT_TO_DOMAIN.keys()) == set(
@@ -53,7 +53,7 @@ def test_get_domain_for_real_banking77_intents():
     assert get_domain_for_intent("reverted_card_payment?") == "transactions_refunds"
     assert get_domain_for_intent("apple_pay_or_google_pay") == "app_features"
     assert get_domain_for_intent("country_support") == "international_services"
-    # Fallback cho intent không tồn tại
+    # Kiểm tra fallback cho intent không tồn tại.
     assert get_domain_for_intent("non_existent_intent") == "general_banking"
 
 

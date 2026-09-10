@@ -1,4 +1,4 @@
-"""System utilities: logging, seeding, JSON serialization, and metrics."""
+"""Tiện ích dùng chung: log, seed, ghi JSON và metric."""
 
 from __future__ import annotations
 
@@ -11,13 +11,11 @@ from pathlib import Path
 from typing import Any
 import numpy as np
 
-from .telemetry.privacy import redact_pii
-
 LOGGER = logging.getLogger("banking_router")
 
 
 def setup_logging() -> None:
-    """Setup UTF-8 stdout and unified log formatting."""
+    """Thiết lập stdout UTF-8 và một định dạng log thống nhất."""
     if hasattr(sys.stdout, "reconfigure"):
         try:
             sys.stdout.reconfigure(encoding="utf-8")
@@ -32,13 +30,13 @@ def setup_logging() -> None:
 
 
 def set_seed(seed: int = 42) -> None:
-    """Fix random seeds for reproducibility."""
+    """Cố định seed để các lần chạy có thể tái lập."""
     random.seed(seed)
     np.random.seed(seed)
 
 
 def save_json(path: str | Path, payload: dict[str, Any] | list[Any]) -> None:
-    """Save dictionary or list as formatted UTF-8 JSON."""
+    """Ghi dictionary hoặc list thành JSON UTF-8 có thụt dòng."""
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -50,7 +48,7 @@ def calculate_ece(
     targets: np.ndarray,
     n_bins: int = 10,
 ) -> float:
-    """Expected Calibration Error."""
+    """Tính sai số hiệu chuẩn kỳ vọng (Expected Calibration Error)."""
     if len(confidences) == 0:
         return 0.0
     bin_boundaries = np.linspace(0.0, 1.0, n_bins + 1)
@@ -71,7 +69,7 @@ def calculate_ece(
 
 
 def calculate_entropy(probabilities: np.ndarray, eps: float = 1e-12) -> np.ndarray | float:
-    """Shannon entropy for 1D or 2D probability arrays."""
+    """Tính entropy Shannon cho mảng xác suất 1D hoặc 2D."""
     p = np.clip(probabilities, eps, 1.0)
     if p.ndim == 1:
         return float(-np.sum(p * np.log(p)))

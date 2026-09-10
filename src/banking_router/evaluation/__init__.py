@@ -1,4 +1,4 @@
-"""Evaluation package exports."""
+"""Các thành phần public của package đánh giá."""
 
 from .calibration import compute_multiclass_brier_score, evaluate_calibration
 from .classification import evaluate_classification

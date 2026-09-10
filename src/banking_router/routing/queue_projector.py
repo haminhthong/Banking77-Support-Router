@@ -1,4 +1,4 @@
-"""Projection from fine-grained intent probabilities to operational queues."""
+"""Cộng xác suất intent chi tiết thành các queue nghiệp vụ."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from .taxonomy import TaxonomyResolver
 
 
 class QueueProjector:
-    """Aggregate mutually-exclusive intent probabilities by business queue."""
+    """Cộng xác suất của các intent loại trừ nhau theo từng queue."""
 
     def __init__(self, classes: Sequence[str], taxonomy: TaxonomyResolver) -> None:
         self.classes = tuple(str(item) for item in classes)

@@ -1,9 +1,8 @@
-"""Modeling package exports."""
+"""Các thành phần public của package modeling."""
 
 from .artifact import ModelArtifacts, load_artifacts, save_artifacts
 from .calibration import (
     TemperatureScaledModel,
-    build_calibrated_model,
     fit_temperature,
     select_probability_model,
 )
@@ -12,7 +11,6 @@ from .training import calculate_ece, calculate_entropy, train_and_optimize
 
 __all__ = [
     "build_pipeline",
-    "build_calibrated_model",
     "TemperatureScaledModel",
     "fit_temperature",
     "select_probability_model",

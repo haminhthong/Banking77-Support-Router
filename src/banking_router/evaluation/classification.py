@@ -1,4 +1,4 @@
-"""Intent classification and hierarchical domain taxonomy projection evaluation."""
+"""Đánh giá phân loại intent và ánh xạ taxonomy domain."""
 
 from __future__ import annotations
 
@@ -14,17 +14,17 @@ def evaluate_classification(
     probabilities: np.ndarray,
     classes: np.ndarray,
 ) -> dict[str, Any]:
-    """Compute intent classification metrics and domain taxonomy accuracy."""
+    """Tính metric phân loại intent và độ chính xác ở cấp domain."""
     accuracy = float(accuracy_score(targets, predictions))
     macro_f1 = float(f1_score(targets, predictions, average="macro"))
 
-    # Top-3 Accuracy
+    # Độ chính xác top-3.
     ranked_indices = probabilities.argsort(axis=1)[:, ::-1]
     top3_classes = classes[ranked_indices[:, :3]]
     top3_correct = np.any(top3_classes == targets[:, None], axis=1)
     top3_accuracy = float(top3_correct.mean())
 
-    # Domain-level Taxonomy Accuracy
+    # Độ chính xác sau khi quy về domain.
     true_domains = np.array([get_domain_for_intent(i) for i in targets])
     pred_domains = np.array([get_domain_for_intent(i) for i in predictions])
     domain_accuracy = float(accuracy_score(true_domains, pred_domains))

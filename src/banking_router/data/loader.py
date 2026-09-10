@@ -1,4 +1,4 @@
-"""Dataset loader enforcing schema validation and immutable test benchmarks."""
+"""Bộ tải dữ liệu, kiểm tra schema và bảo toàn tập test chuẩn."""
 
 from __future__ import annotations
 
@@ -9,13 +9,13 @@ from .normalization import normalize_pii_semantically
 
 
 def read_raw_dataset(path: Path | str) -> pd.DataFrame:
-    """Read raw BANKING77 CSV and normalize column structure to ['text', 'intent'].
+    """Đọc CSV BANKING77 và đưa schema về ``['text', 'intent']``.
 
-    Preserves exact row count and does NOT drop duplicates or filter rows.
+    Hàm giữ nguyên số dòng, không loại bản ghi trùng và không lọc mẫu.
     """
     p = Path(path)
     if not p.exists():
-        raise FileNotFoundError(f"Dataset file not found: {p}")
+        raise FileNotFoundError(f"Không tìm thấy file dữ liệu: {p}")
 
     df = pd.read_csv(p)
     lower_map = {str(c).lower().strip(): c for c in df.columns}
@@ -25,7 +25,7 @@ def read_raw_dataset(path: Path | str) -> pd.DataFrame:
     )
 
     if text_col is None or intent_col is None:
-        # Fallback for headerless CSV: category, text or intent, text
+        # Fallback cho CSV không có header: category, text hoặc intent, text.
         raw = pd.read_csv(p, header=None, names=["intent", "text"])
         result = raw[["text", "intent"]].copy()
     else:
@@ -33,36 +33,36 @@ def read_raw_dataset(path: Path | str) -> pd.DataFrame:
             columns={text_col: "text", intent_col: "intent"}
         ).copy()
 
-    # Schema & type validation
+    # Kiểm tra schema và chuyển kiểu dữ liệu về chuỗi.
     result["text"] = result["text"].astype(str)
     result["intent"] = result["intent"].astype(str)
     return result
 
 
 def normalize_dataset(df: pd.DataFrame) -> pd.DataFrame:
-    """Apply basic whitespace normalization to strings without altering row count."""
+    """Chuẩn hóa text mà không làm thay đổi số dòng."""
     norm_df = df.copy()
-    # Keep this transformation identical to the serving path.  The semantic
-    # placeholders preserve words such as "account" while removing identifiers.
+    # Giữ cùng phép biến đổi với serving. Placeholder ngữ nghĩa giữ lại các từ
+    # như "account" nhưng loại bỏ định danh cụ thể.
     norm_df["text"] = norm_df["text"].apply(normalize_pii_semantically)
     norm_df["intent"] = norm_df["intent"].str.strip()
     return norm_df
 
 
 def load_official_test(raw_dir: Path | str = "data/raw") -> pd.DataFrame:
-    """Load the official untouched BANKING77 test benchmark.
+    """Đọc tập test BANKING77 chính thức mà không chỉnh sửa mẫu.
 
-    CRITICAL PRODUCTION CONTRACT:
-    - Never deduplicate.
-    - Never drop rows or suspicious samples.
-    - Preserves immutable benchmark integrity (exactly 3,080 published rows).
-    - Report-only!
+    Quy ước của tập đánh giá:
+    - Không loại bản ghi trùng.
+    - Không loại dòng hoặc mẫu bị nghi ngờ.
+    - Giữ đủ 3.080 mẫu theo bản công bố.
+    - Chỉ dùng để báo cáo kết quả.
     """
     test_path = Path(raw_dir) / "test.csv"
     raw = read_raw_dataset(test_path)
     normalized = normalize_dataset(raw)
 
-    # Validate all intents belong to the known 77 classes
+    # Kiểm tra mọi intent đều thuộc 77 lớp đã biết.
     unknown_intents = set(normalized["intent"]) - set(BANKING77_77_CLASSES)
     if unknown_intents:
         raise ValueError(

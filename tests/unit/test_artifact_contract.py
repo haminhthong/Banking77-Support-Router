@@ -1,4 +1,4 @@
-"""Artifact contract: chỉ một layout canonical, không manifest/hash alias."""
+"""Kiểm thử artifact: chỉ có một layout chuẩn, không có alias manifest/hash."""
 
 from src.banking_router.config import ARTIFACTS_DIR
 

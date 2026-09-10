@@ -1,3 +1,3 @@
-"""Intent classification và uncertainty-aware support-ticket routing trên Banking77."""
+"""Phân loại intent và route ticket có xét độ không chắc chắn trên Banking77."""
 
 __version__ = "1.0.0"
