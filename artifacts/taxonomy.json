@@ -97,10 +97,13 @@
     },
     "card_swallowed": {
       "domain": "atm_cash",
-      "queue": "fraud_security_queue",
+      "queue": "sensitive_case_review_queue",
       "priority": "critical",
-      "risk_tier": "critical",
-      "is_high_risk": true
+      "sensitive_case": {
+        "category": "physical_card_security",
+        "tier": "critical",
+        "priority_review": true
+      }
     },
     "cash_withdrawal_charge": {
       "domain": "atm_cash",
@@ -109,10 +112,13 @@
     },
     "cash_withdrawal_not_recognised": {
       "domain": "atm_cash",
-      "queue": "fraud_security_queue",
+      "queue": "sensitive_case_review_queue",
       "priority": "critical",
-      "risk_tier": "critical",
-      "is_high_risk": true
+      "sensitive_case": {
+        "category": "unauthorized_cash",
+        "tier": "critical",
+        "priority_review": true
+      }
     },
     "declined_cash_withdrawal": {
       "domain": "atm_cash",
@@ -128,7 +134,11 @@
       "domain": "atm_cash",
       "queue": "payment_investigation_queue",
       "priority": "critical",
-      "risk_tier": "critical"
+      "sensitive_case": {
+        "category": "cash_discrepancy",
+        "tier": "high",
+        "priority_review": false
+      }
     },
     "wrong_exchange_rate_for_cash_withdrawal": {
       "domain": "atm_cash",
@@ -142,24 +152,33 @@
     },
     "compromised_card": {
       "domain": "account_security",
-      "queue": "fraud_security_queue",
+      "queue": "sensitive_case_review_queue",
       "priority": "critical",
-      "risk_tier": "critical",
-      "is_high_risk": true
+      "sensitive_case": {
+        "category": "account_compromise",
+        "tier": "critical",
+        "priority_review": true
+      }
     },
     "lost_or_stolen_card": {
       "domain": "account_security",
-      "queue": "fraud_security_queue",
+      "queue": "sensitive_case_review_queue",
       "priority": "critical",
-      "risk_tier": "critical",
-      "is_high_risk": true
+      "sensitive_case": {
+        "category": "physical_card_security",
+        "tier": "critical",
+        "priority_review": true
+      }
     },
     "lost_or_stolen_phone": {
       "domain": "account_security",
-      "queue": "fraud_security_queue",
+      "queue": "sensitive_case_review_queue",
       "priority": "critical",
-      "risk_tier": "critical",
-      "is_high_risk": true
+      "sensitive_case": {
+        "category": "account_compromise",
+        "tier": "critical",
+        "priority_review": true
+      }
     },
     "passcode_forgotten": {
       "domain": "account_security",
@@ -213,9 +232,13 @@
     },
     "direct_debit_payment_not_recognised": {
       "domain": "transfers_payments",
-      "queue": "fraud_security_queue",
+      "queue": "sensitive_case_review_queue",
       "priority": "critical",
-      "risk_tier": "critical"
+      "sensitive_case": {
+        "category": "unauthorized_transaction",
+        "tier": "critical",
+        "priority_review": true
+      }
     },
     "failed_transfer": {
       "domain": "transfers_payments",
@@ -314,9 +337,13 @@
     },
     "card_payment_not_recognised": {
       "domain": "transactions_refunds",
-      "queue": "fraud_security_queue",
+      "queue": "sensitive_case_review_queue",
       "priority": "critical",
-      "risk_tier": "critical"
+      "sensitive_case": {
+        "category": "unauthorized_transaction",
+        "tier": "critical",
+        "priority_review": true
+      }
     },
     "card_payment_wrong_exchange_rate": {
       "domain": "transactions_refunds",
@@ -400,15 +427,22 @@
     }
   },
   "system_queues": {
-    "priority_fraud_security": "fraud_security_queue",
+    "priority_sensitive_case": "sensitive_case_review_queue",
     "general_human_review": "general_human_review_queue",
-    "ood_review": "general_human_review_queue"
+    "scope_review": "general_human_review_queue"
   },
-  "high_risk_intents": [
-    "compromised_card",
-    "lost_or_stolen_card",
-    "lost_or_stolen_phone",
-    "card_swallowed",
-    "cash_withdrawal_not_recognised"
-  ]
+  "sensitive_groups": {
+    "physical_card_security": {
+      "review_queue": "sensitive_case_review_queue"
+    },
+    "unauthorized_cash": {
+      "review_queue": "sensitive_case_review_queue"
+    },
+    "unauthorized_transaction": {
+      "review_queue": "sensitive_case_review_queue"
+    },
+    "account_compromise": {
+      "review_queue": "sensitive_case_review_queue"
+    }
+  }
 }

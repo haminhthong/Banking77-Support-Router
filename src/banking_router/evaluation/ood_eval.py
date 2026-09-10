@@ -1,4 +1,4 @@
-"""Out-of-Distribution (OOD) benchmark evaluation."""
+"""Đánh giá smoke set cho hành vi ngoài phạm vi hỗ trợ."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ def evaluate_ood_benchmark(
     routing_service: RoutingService,
     split: str = "all",
 ) -> dict[str, Any]:
-    """Đánh giá scope; mặc định dùng locked set không được dùng để tune."""
+    """Đánh giá scope trên tập ví dụ nhỏ, không gọi đây là benchmark robust."""
     path = Path(ood_file)
     if not path.exists():
         return {
@@ -51,7 +51,7 @@ def evaluate_ood_benchmark(
         category_breakdown[cat]["total"] += 1
 
         res = routing_service.route(text)
-        if res.risk.ood_detected:
+        if res.scope_detected:
             ood_detected_count += 1
             category_breakdown[cat]["detected"] += 1
 

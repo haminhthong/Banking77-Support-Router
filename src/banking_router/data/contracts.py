@@ -178,16 +178,6 @@ INTENT_TO_DOMAIN: dict[str, str] = {
     "country_support": "international_services",
 }
 
-DEFAULT_HIGH_RISK_INTENTS: frozenset[str] = frozenset(
-    {
-        "cash_withdrawal_not_recognised",
-        "card_swallowed",
-        "compromised_card",
-        "lost_or_stolen_card",
-        "lost_or_stolen_phone",
-    }
-)
-
 assert set(INTENT_TO_DOMAIN.keys()) == set(
     BANKING77_77_CLASSES
 ), "Taxonomy mapping does not match exact 77 classes!"

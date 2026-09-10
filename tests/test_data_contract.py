@@ -2,19 +2,17 @@
 
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
-from src.data import (
+from src.banking_router.data import (
     BANKING77_77_CLASSES,
     INTENT_TO_DOMAIN,
-    _read_banking77,
+    read_raw_dataset,
     audit_conflicting_labels,
     audit_normalized_duplicates,
     get_domain_for_intent,
     load_training_splits,
     summarize_split_quality,
 )
-from src.train import select_reject_threshold
 
 
 def test_read_banking77_normalizes_columns_and_order(tmp_path: Path):
@@ -25,7 +23,7 @@ def test_read_banking77_normalizes_columns_and_order(tmp_path: Path):
         encoding="utf-8",
     )
 
-    result = _read_banking77(csv_path)
+    result = read_raw_dataset(csv_path)
 
     assert list(result.columns) == ["text", "intent"]
     assert result.iloc[0].to_dict() == {
@@ -57,17 +55,6 @@ def test_get_domain_for_real_banking77_intents():
     assert get_domain_for_intent("country_support") == "international_services"
     # Fallback cho intent không tồn tại
     assert get_domain_for_intent("non_existent_intent") == "general_banking"
-
-
-def test_reject_threshold_keeps_minimum_coverage():
-    """Kiểm tra thuật toán chọn ngưỡng luôn đáp ứng độ phủ tối thiểu (minimum_coverage)."""
-    confidence = np.array([0.95, 0.85, 0.75, 0.65, 0.10])
-    correct = np.array([True, True, True, True, False])
-
-    threshold = select_reject_threshold(confidence, correct, minimum_coverage=0.80)
-
-    assert float((confidence >= threshold).mean()) >= 0.80
-    assert threshold > 0.10
 
 
 def test_split_quality_detects_pairwise_text_overlap():

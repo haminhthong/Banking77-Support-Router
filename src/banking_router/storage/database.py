@@ -1,4 +1,4 @@
-"""SQLite schema and connection helpers for ticket lifecycle state."""
+"""SQLite schema nhỏ cho ticket và review feedback."""
 
 from __future__ import annotations
 
@@ -18,13 +18,12 @@ def connect_database(path: Path | str) -> sqlite3.Connection:
             request_id TEXT PRIMARY KEY,
             created_at TEXT NOT NULL,
             text_redacted TEXT NOT NULL,
-            model_version TEXT NOT NULL,
-            policy_version TEXT NOT NULL,
+            model_name TEXT NOT NULL,
             predicted_intent TEXT NOT NULL,
             intent_confidence REAL NOT NULL,
             predicted_queue TEXT NOT NULL,
             queue_confidence REAL NOT NULL,
-            critical_risk_probability REAL NOT NULL,
+            sensitive_probability_mass REAL NOT NULL,
             decision TEXT NOT NULL,
             queue_id TEXT NOT NULL,
             priority TEXT NOT NULL,
@@ -43,8 +42,5 @@ def connect_database(path: Path | str) -> sqlite3.Connection:
         );
         """
     )
-    columns = {row[1] for row in connection.execute("PRAGMA table_info(reviews)").fetchall()}
-    if "reason_code" not in columns:
-        connection.execute("ALTER TABLE reviews ADD COLUMN reason_code TEXT")
     connection.commit()
     return connection

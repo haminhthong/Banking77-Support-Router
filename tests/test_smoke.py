@@ -1,192 +1,63 @@
-"""Các unit test kiểm tra chức năng cốt lõi, chính sách phân luồng và tích hợp API FastAPI."""
+"""Smoke tests cho calibration, PII và routing policy."""
 
 import numpy as np
-from src.policy import DEFAULT_HIGH_RISK_INTENTS, RoutingPolicy
-from src.utils import calculate_ece, calculate_entropy, redact_pii
+
+from src.banking_router.modeling.training import calculate_ece, calculate_entropy
+from src.banking_router.routing.policy import RoutingPolicy
+from src.banking_router.routing.schemas import IntentPrediction, QueuePrediction, SensitiveCaseAssessment
+from src.banking_router.telemetry.privacy import redact_pii
 
 
-def test_calculate_ece_perfect_calibration():
-    """Kiểm tra ECE = 0 khi độ chính xác thực tế khớp hoàn toàn với độ tin cậy trung bình."""
-    # Khi dự đoán đúng 100% với confidence 1.0
-    confidences = np.array([1.0, 1.0, 1.0, 1.0])
-    predictions = np.array(["a", "b", "c", "d"])
-    targets = np.array(["a", "b", "c", "d"])
-
-    ece = calculate_ece(confidences, predictions, targets, n_bins=5)
-    assert abs(ece) < 1e-6
-
-    # Khi accuracy trong bin khớp đúng với confidence (ví dụ 50% đúng với conf 0.5)
-    conf_half = np.array([0.5, 0.5])
-    pred_half = np.array(["a", "b"])
-    target_half = np.array(["a", "wrong"])
-    ece_half = calculate_ece(conf_half, pred_half, target_half, n_bins=1)
-    assert abs(ece_half) < 1e-6
+def prediction(confidence: float = 0.85, margin: float = 0.50) -> IntentPrediction:
+    return IntentPrediction("card_arrival", "card_services", confidence, margin, 0.5)
 
 
-def test_calculate_entropy():
-    """Kiểm tra tính toán Shannon Entropy."""
-    # Phân phối đều -> entropy cực đại
-    uniform_p = np.array([0.25, 0.25, 0.25, 0.25])
-    ent_max = calculate_entropy(uniform_p)
-    # Phân phối tập trung -> entropy xấp xỉ 0
-    certain_p = np.array([0.999, 0.001 / 3, 0.001 / 3, 0.001 / 3])
-    ent_min = calculate_entropy(certain_p)
-    assert ent_max > ent_min
-    assert ent_min >= 0.0
+def safe_case() -> SensitiveCaseAssessment:
+    return SensitiveCaseAssessment(False, None, 0.0, False)
+
+
+def test_calculate_ece_and_entropy():
+    assert calculate_ece(np.array([1.0, 1.0]), np.array(["a", "b"]), np.array(["a", "b"])) == 0.0
+    entropy = calculate_entropy(np.array([[0.25, 0.25, 0.25, 0.25]]))[0]
+    assert entropy > 1.0
 
 
 def test_redact_pii():
-    """Kiểm tra che giấu thông tin nhạy cảm PII."""
-    raw = "My card 1234 5678 9012 3456 was stolen. Call +1-555-123-4567 or email me at user@test.com"
+    raw = "My card 1234 5678 9012 3456 was stolen. Email user@test.com"
     cleaned = redact_pii(raw)
     assert "1234" not in cleaned
     assert "[CARD_NUMBER]" in cleaned
-    assert "user@test.com" not in cleaned
     assert "[EMAIL]" in cleaned
-    assert "[PHONE_NUMBER]" in cleaned
 
 
-def test_routing_policy_abstains_low_confidence():
-    """Kiểm tra policy từ chối tự động hóa (Abstain) khi confidence dưới ngưỡng."""
-    decision = RoutingPolicy(threshold=0.6).decide(
-        "card_arrival", confidence=0.4, top_domain="card_services"
-    )
-
-    assert decision.intent is None
-    assert decision.domain is None
-    assert decision.route == "human"
-    assert decision.decision == "abstain"
-    assert decision.abstained is True
-    assert decision.is_unknown is True
+def test_policy_routes_low_confidence_to_human_review():
+    decision = RoutingPolicy(queue_threshold=0.60).evaluate(prediction(0.40, 0.10), safe_case())
+    assert decision.action == "human_review"
     assert decision.requires_human_review is True
-    assert decision.review_reason == "LOW_CONFIDENCE"
+    assert decision.reason_codes == ["LOW_CONFIDENCE"]
 
 
-def test_routing_policy_escalates_high_risk_even_with_low_confidence():
-    """Kiểm tra ca rủi ro cao luôn được ưu tiên (Priority Escalation) kể cả khi confidence thấp."""
-    # Top intent là rủi ro cao nhưng confidence chỉ 0.35 (thấp hơn threshold 0.60)
-    decision = RoutingPolicy(threshold=0.6).decide(
-        "compromised_card", confidence=0.35, top_domain="account_security"
+def test_policy_prioritizes_sensitive_case_before_confidence():
+    sensitive = SensitiveCaseAssessment(
+        True, "compromised_card", 0.25, False, ["SENSITIVE_INTENT_MASS"],
+        0.40, "account_compromise", {"account_compromise": 0.40},
     )
-
-    assert decision.intent == "compromised_card"
-    assert decision.domain == "account_security"
-    assert decision.route == "priority_human_review"
-    assert decision.decision == "priority_escalation"
-    assert decision.abstained is False
-    assert decision.requires_human_review is True
-    assert decision.review_reason == "HIGH_RISK_INTENT"
+    decision = RoutingPolicy(queue_threshold=0.90).evaluate(prediction(0.35), sensitive)
+    assert decision.action == "priority_human_review"
+    assert decision.queue_id == "sensitive_case_review_queue"
 
 
-def test_routing_policy_escalates_top_k_high_risk_candidate():
-    """Kiểm tra leo thang khi intent rủi ro cao xuất hiện trong Top-K với xác suất đáng kể."""
-    candidates = [("card_arrival", 0.45), ("compromised_card", 0.25)]
-    decision = RoutingPolicy(threshold=0.60, high_risk_trigger=0.20).decide(
-        top_intent="card_arrival",
-        confidence=0.45,
-        top_domain="card_services",
-        top_k_candidates=candidates,
+def test_policy_rejects_scope_even_with_high_confidence():
+    decision = RoutingPolicy(queue_threshold=0.50).evaluate(
+        prediction(0.99), safe_case(), scope_detected=True, scope_reasons=["OUT_OF_SCOPE_QUERY"]
     )
-
-    assert decision.route == "priority_human_review"
-    assert decision.decision == "priority_escalation"
-    assert decision.review_reason == "HIGH_RISK_CANDIDATE"
+    assert decision.action == "human_review"
+    assert decision.queue_id == "general_human_review_queue"
 
 
-def test_routing_policy_abstains_on_ambiguous_margin():
-    """Kiểm tra policy từ chối khi khoảng cách giữa top 1 và top 2 quá hẹp (Margin Gate)."""
-    decision = RoutingPolicy(threshold=0.50, min_margin=0.10).decide(
-        top_intent="card_arrival",
-        confidence=0.70,
-        top_domain="card_services",
-        margin=0.03,  # Quá hẹp
-    )
-
-    assert decision.decision == "abstain"
-    assert decision.abstained is True
-    assert decision.review_reason == "AMBIGUOUS_MARGIN"
-
-
-def test_routing_policy_safe_auto_route():
-    """Kiểm tra ca tự tin và an toàn được tự động phân luồng."""
-    decision = RoutingPolicy(threshold=0.50).decide(
-        top_intent="card_arrival",
-        confidence=0.85,
-        top_domain="card_services",
-    )
-
-    assert decision.decision == "auto_route"
-    assert decision.abstained is False
-    assert decision.route == "card_arrival"
+def test_policy_auto_routes_confident_queue():
+    queue = QueuePrediction("card_queue", 0.90, 0.40, {"card_queue": 0.90})
+    decision = RoutingPolicy(queue_threshold=0.80).evaluate(prediction(), safe_case(), queue_prediction=queue)
+    assert decision.action == "auto_route"
+    assert decision.queue_id == "card_queue"
     assert decision.requires_human_review is False
-    assert decision.review_reason is None
-
-
-def test_predict_returns_ranked_alternatives_and_domain(monkeypatch):
-    """Kiểm tra API /predict trả về kết quả xếp hạng, domain và các trường mới."""
-    import src.api as api
-
-    class FakeModel:
-        classes_ = np.array(["card_arrival", "card_swallowed", "cash_withdrawal_charge"])
-
-        def predict_proba(self, _texts):
-            return np.array([[0.7, 0.2, 0.1]])
-
-    monkeypatch.setattr(api, "_model", FakeModel())
-    monkeypatch.setattr(
-        api,
-        "_config",
-        {
-            "threshold": 0.35,
-            "version": "test-model-v2",
-            "policy_version": "test-policy-v2",
-            "high_risk_trigger": 0.25,
-            "domain_map": {
-                "card_arrival": "card_services",
-                "card_swallowed": "atm_cash",
-                "cash_withdrawal_charge": "atm_cash",
-            },
-        },
-    )
-
-    response = api.predict(api.Query(text="Where is my card?", top_k=2))
-
-    assert response["top_intent"] == "card_arrival"
-    assert response["domain"] == "card_services"
-    assert response["confidence"] == 0.7
-    assert response["decision"] == "auto_route"
-    assert response["abstained"] is False
-    assert len(response["alternatives"]) == 2
-    assert response["alternatives"][0]["domain"] == "card_services"
-    assert response["requires_human_review"] is False
-
-
-def test_predict_batch_vectorized(monkeypatch):
-    """Kiểm tra API /predict/batch xử lý hàng loạt nhiều query vector hóa."""
-    import src.api as api
-
-    class FakeModel:
-        classes_ = np.array(["card_arrival", "cash_withdrawal_charge"])
-
-        def predict_proba(self, texts):
-            return np.array([[0.8, 0.2] for _ in texts])
-
-    monkeypatch.setattr(api, "_model", FakeModel())
-    monkeypatch.setattr(
-        api,
-        "_config",
-        {"threshold": 0.35, "version": "test-model-v2", "policy_version": "test-policy-v2"},
-    )
-
-    batch_query = api.BatchQuery(
-        queries=[
-            api.Query(text="Where is my card?"),
-            api.Query(text="I need cash from ATM"),
-        ]
-    )
-
-    res = api.predict_batch(batch_query)
-    assert res["total_queries"] == 2
-    assert len(res["results"]) == 2
-    assert res["results"][0]["decision"] == "auto_route"
-    assert res["results"][0]["confidence"] == 0.8

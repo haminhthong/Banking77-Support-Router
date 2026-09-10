@@ -1,12 +1,9 @@
-"""Guard chất lượng đầu vào và scope Banking77."""
+"""Kiểm tra chất lượng input và phạm vi hỗ trợ của Banking77."""
 
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, Sequence
-
-if TYPE_CHECKING:
-    from ..modeling.scope import ScopeClassifier
+from typing import Any, Sequence
 
 STOPWORDS = frozenset({
     "i", "me", "my", "we", "our", "you", "your", "he", "his", "she", "her",
@@ -21,7 +18,7 @@ STOPWORDS = frozenset({
 
 
 class ScopeGuard:
-    """Kết hợp input-quality guard, scope model và heuristic tương thích."""
+    """Kết hợp heuristic input, scope classifier và vocabulary của intent model."""
 
     def __init__(
         self,
@@ -29,47 +26,44 @@ class ScopeGuard:
         min_chars: int = 4,
         min_tokens: int = 2,
         lexical_similarity_threshold: float = 0.08,
-        low_confidence_ood_threshold: float = 0.22,
-        scope_classifier: ScopeClassifier | Any | None = None,
+        low_confidence_threshold: float = 0.22,
+        scope_classifier: Any | None = None,
         unsupported_threshold: float = 0.80,
     ) -> None:
         self.vocabulary = vocabulary or set()
         self.min_chars = min_chars
         self.min_tokens = min_tokens
         self.lexical_similarity_threshold = lexical_similarity_threshold
-        self.low_confidence_ood_threshold = low_confidence_ood_threshold
+        self.low_confidence_threshold = low_confidence_threshold
         self.scope_classifier = scope_classifier
         self.unsupported_threshold = unsupported_threshold
 
     def set_vocabulary(self, vocabulary: Sequence[str] | set[str]) -> None:
-        """Cập nhật vocabulary sau khi model đã được load."""
-        self.vocabulary = {str(word).lower() for word in vocabulary if str(word).lower() not in STOPWORDS}
+        self.vocabulary = {
+            str(word).lower()
+            for word in vocabulary
+            if str(word).lower() not in STOPWORDS
+        }
 
-    def set_scope_classifier(self, classifier: ScopeClassifier | Any | None) -> None:
+    def set_scope_classifier(self, classifier: Any | None) -> None:
         self.scope_classifier = classifier
 
-    def detect(
-        self,
-        text: str,
-        confidence: float,
-        margin: float | None = None,
-    ) -> tuple[bool, list[str]]:
-        """Trả về cờ scope và reason code; không dựa vào top-k hiển thị."""
+    def detect(self, text: str, confidence: float, margin: float | None = None) -> tuple[bool, list[str]]:
         del margin
         clean_text = text.strip()
         tokens = re.findall(r"\b\w+\b", clean_text.lower())
 
         if len(clean_text) < self.min_chars:
-            return True, ["OOD_TOO_SHORT"]
+            return True, ["SCOPE_TOO_SHORT"]
         if len(tokens) < self.min_tokens:
             if not tokens:
-                return True, ["OOD_NO_TOKENS"]
+                return True, ["SCOPE_NO_TOKENS"]
             if tokens[0] not in self.vocabulary:
                 return True, ["SCOPE_LOW_INFORMATION"]
         if re.search(r"(.)\1{4,}", clean_text.lower()):
-            return True, ["OOD_GIBBERISH_REPETITION"]
+            return True, ["SCOPE_GIBBERISH"]
         if re.fullmatch(r"[\d\W_]+", clean_text):
-            return True, ["OOD_NON_TEXTUAL"]
+            return True, ["SCOPE_NON_TEXTUAL"]
 
         if self.scope_classifier is not None:
             try:
@@ -81,7 +75,7 @@ class ScopeGuard:
             if unsupported >= self.unsupported_threshold:
                 return True, ["OUT_OF_SCOPE_QUERY"]
 
-        low_confidence = confidence < self.low_confidence_ood_threshold
+        low_confidence = confidence < self.low_confidence_threshold
         content_tokens = [token for token in tokens if token not in STOPWORDS]
         if self.vocabulary:
             if not content_tokens and confidence < 0.60:
@@ -94,7 +88,3 @@ class ScopeGuard:
                 return True, ["OUT_OF_SCOPE_QUERY"]
 
         return False, []
-
-
-InputQualityGuard = ScopeGuard
-OODGuard = ScopeGuard

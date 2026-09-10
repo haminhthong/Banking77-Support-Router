@@ -41,7 +41,7 @@ def test_api():
         print(f"\nQuery: '{text}'")
         print(f"  Action: {data['decision']['action']} | Queue: {data['decision']['queue']} | Priority: {data['decision']['priority']}")
         print(f"  Predicted Intent: {data['prediction']['intent']} ({data['prediction']['domain']}) | Confidence: {data['prediction']['confidence']}")
-        print(f"  Risk Signals: high_risk={data['risk']['high_risk_detected']} | ood={data['risk']['ood_detected']}")
+        print(f"  Signals: sensitive={data['sensitive_case']['requires_priority_review']} | scope={not data['scope']['supported']}")
 
     print("\n=== 3. KIỂM THỬ BATCH ROUTING (/v1/route/batch) ===")
     b_res = client.post(

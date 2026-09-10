@@ -1,8 +1,3 @@
-"""Banking77 Support Router: Risk-Aware Banking Support Triage System.
+"""Intent classification và uncertainty-aware support-ticket routing trên Banking77."""
 
-An industrial-grade triage system combining intent classification,
-optional temperature calibration, selective prediction, scope guarding,
-and decoupled operational routing policies for banking customer support.
-"""
-
-__version__ = "3.0.0"
+__version__ = "1.0.0"

@@ -1,6 +1,6 @@
 """Modeling package exports."""
 
-from .artifact import ModelBundle, load_and_validate_bundle, save_bundle
+from .artifact import ModelArtifacts, load_artifacts, save_artifacts
 from .calibration import (
     TemperatureScaledModel,
     build_calibrated_model,
@@ -16,9 +16,9 @@ __all__ = [
     "TemperatureScaledModel",
     "fit_temperature",
     "select_probability_model",
-    "ModelBundle",
-    "save_bundle",
-    "load_and_validate_bundle",
+    "ModelArtifacts",
+    "save_artifacts",
+    "load_artifacts",
     "calculate_ece",
     "calculate_entropy",
     "train_and_optimize",

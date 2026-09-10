@@ -2,7 +2,6 @@
 
 from .contracts import (
     BANKING77_77_CLASSES,
-    DEFAULT_HIGH_RISK_INTENTS,
     INTENT_TO_DOMAIN,
     get_domain_for_intent,
 )
@@ -12,7 +11,6 @@ from .loader import (
     read_raw_dataset,
 )
 from .normalization import (
-    compute_file_sha256,
     normalize_text_for_audit,
     normalize_whitespace,
 )
@@ -29,7 +27,6 @@ from .split import (
 
 __all__ = [
     "BANKING77_77_CLASSES",
-    "DEFAULT_HIGH_RISK_INTENTS",
     "INTENT_TO_DOMAIN",
     "get_domain_for_intent",
     "read_raw_dataset",
@@ -37,7 +34,6 @@ __all__ = [
     "load_official_test",
     "normalize_whitespace",
     "normalize_text_for_audit",
-    "compute_file_sha256",
     "audit_conflicting_labels",
     "audit_normalized_duplicates",
     "audit_dataset",

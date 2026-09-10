@@ -1,7 +1,0 @@
-{
-  "release": "releases/banking-router-v5",
-  "model_version": "banking77-tfidf-char-lr-v5",
-  "policy_version": "queue-policy-v5",
-  "promotion_status": "PROMOTED",
-  "promoted_at": "2026-09-07T21:27:33.978870+00:00"
-}

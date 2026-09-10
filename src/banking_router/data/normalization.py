@@ -1,11 +1,9 @@
-"""Text normalization and cryptographic hashing utilities for dataset contracts."""
+"""Chuẩn hóa text và PII trước khi train hoặc inference."""
 
 from __future__ import annotations
 
-import hashlib
 import re
 import unicodedata
-from pathlib import Path
 
 
 NORMALIZATION_VERSION = "semantic-pii-v1"
@@ -52,13 +50,3 @@ def normalize_text_for_audit(text: str) -> str:
     text = re.sub(r"[^\w\s]", "", text)
     text = re.sub(r"\s+", " ", text)
     return text.strip()
-
-
-def compute_file_sha256(path: Path | str) -> str:
-    """Compute SHA-256 hash of a file for reproducibility and manifest verification."""
-    p = Path(path)
-    if not p.exists():
-        return "missing"
-    h = hashlib.sha256()
-    h.update(p.read_bytes())
-    return h.hexdigest()

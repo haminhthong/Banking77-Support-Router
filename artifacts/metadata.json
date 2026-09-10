@@ -1,0 +1,14 @@
+{
+  "model": "word-char-tfidf-logistic-regression",
+  "classes": 77,
+  "calibration": "temperature",
+  "dataset": "Banking77",
+  "test_samples": 3080,
+  "normalization": "semantic-pii-v1",
+  "benchmark": "official",
+  "thresholds": {
+    "selected_queue_threshold": 0.95,
+    "selected_queue_margin": 0.0,
+    "selected_sensitive_threshold": 0.1
+  }
+}

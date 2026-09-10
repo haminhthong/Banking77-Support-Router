@@ -33,9 +33,9 @@ def record_routing_event(
         "queue_id": result.decision.queue_id,
         "queue_confidence": result.queue_prediction.confidence if result.queue_prediction else None,
         "queue_margin": result.queue_prediction.margin if result.queue_prediction else None,
-        "high_risk_detected": result.risk.high_risk_detected,
-        "critical_probability": result.risk.critical_probability,
-        "ood_detected": result.risk.ood_detected,
+        "sensitive_case_review": result.sensitive_case.requires_priority_review,
+        "sensitive_probability_mass": result.sensitive_case.sensitive_probability_mass,
+        "scope_detected": result.scope_detected,
         "reason_codes": result.decision.reason_codes,
         "latency_ms": round(latency_ms, 2),
     }
@@ -47,7 +47,7 @@ def record_routing_event(
 def record_human_feedback(
     feedback_file: Path | str,
     request_id: str,
-    model_version: str,
+    model_name: str,
     predicted_intent: str,
     reviewed_intent: str,
     reviewed_queue: str | None = None,
@@ -56,14 +56,14 @@ def record_human_feedback(
     notes: str | None = None,
     reason_code: str | None = None,
 ) -> dict[str, Any]:
-    """Record human reviewer corrections for continuous quality tracking and future retraining."""
+    """Lưu kết quả review để phân tích chất lượng về sau."""
     path = Path(feedback_file)
     path.parent.mkdir(parents=True, exist_ok=True)
 
     record = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "request_id": request_id,
-        "model_version": model_version,
+        "model": model_name,
         "predicted_intent": predicted_intent,
         "reviewed_intent": reviewed_intent,
         "reviewed_queue": reviewed_queue,

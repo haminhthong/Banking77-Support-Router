@@ -1,0 +1,20 @@
+{
+  "runtime_thresholds": {
+    "queue_probability": 0.95,
+    "queue_margin": 0.0,
+    "sensitive_probability": 0.1,
+    "min_margin": 0.02,
+    "max_entropy": 3.8
+  },
+  "sensitive_case": {
+    "minimum_signal_probability": 0.16,
+    "minimum_scope_signal": 0.3
+  },
+  "scope": {
+    "min_chars": 4,
+    "min_tokens": 2,
+    "lexical_similarity_threshold": 0.08,
+    "low_confidence_threshold": 0.22,
+    "unsupported_threshold": 0.8
+  }
+}

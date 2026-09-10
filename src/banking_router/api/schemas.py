@@ -1,40 +1,20 @@
-"""Pydantic schemas for REST API endpoints."""
+"""Pydantic schemas cho API route ticket."""
 
 from __future__ import annotations
 
 from typing import Any
+
 from pydantic import BaseModel, Field
 
 
 class RouteRequest(BaseModel):
-    """Customer support ticket input request."""
-    text: str = Field(
-        ...,
-        min_length=2,
-        max_length=1000,
-        description="Nội dung thắc mắc hoặc yêu cầu hỗ trợ từ khách hàng",
-        examples=["Why has my cash withdrawal been declined?"],
-    )
-    top_k: int = Field(
-        default=3,
-        ge=1,
-        le=5,
-        description="Số lượng dự đoán thay thế top_k hiển thị (không ảnh hưởng tới safety engine)",
-    )
-    request_id: str | None = Field(
-        default=None,
-        description="Optional client request tracking identifier",
-    )
+    text: str = Field(..., min_length=2, max_length=1000, description="Nội dung ticket hỗ trợ")
+    top_k: int = Field(default=3, ge=1, le=5, description="Số intent thay thế được hiển thị")
+    request_id: str | None = Field(default=None, description="Mã request do client cung cấp")
 
 
 class BatchRouteRequest(BaseModel):
-    """Batch routing request schema."""
-    tickets: list[RouteRequest] = Field(
-        ...,
-        min_length=1,
-        max_length=100,
-        description="Danh sách các câu hỏi ticket cần xử lý phân luồng",
-    )
+    tickets: list[RouteRequest] = Field(..., min_length=1, max_length=100)
 
 
 class IntentAlternativeResponse(BaseModel):
@@ -59,15 +39,14 @@ class QueuePredictionResponse(BaseModel):
     probabilities: dict[str, float] = Field(default_factory=dict)
 
 
-class RiskResponse(BaseModel):
-    tier: str = "normal"
-    high_risk_detected: bool
-    high_risk_intent: str | None
-    high_risk_score: float
-    critical_probability: float = 0.0
-    ood_detected: bool
-    risk_category: str | None = None
-    risk_group_mass: dict[str, float] = Field(default_factory=dict)
+class SensitiveCaseResponse(BaseModel):
+    requires_priority_review: bool
+    sensitive_intent: str | None = None
+    sensitive_score: float
+    sensitive_probability_mass: float
+    category: str | None = None
+    group_mass: dict[str, float] = Field(default_factory=dict)
+    signals: list[str] = Field(default_factory=list)
 
 
 class ScopeResponse(BaseModel):
@@ -84,30 +63,20 @@ class DecisionResponse(BaseModel):
 
 
 class RouteResponse(BaseModel):
-    """Canonical production response format for triage decisions."""
     request_id: str
     prediction: PredictionResponse
-    intent_prediction: PredictionResponse | None = None
     queue_prediction: QueuePredictionResponse | None = None
-    scope: ScopeResponse | None = None
-    versions: dict[str, str] = Field(default_factory=dict)
-    risk: RiskResponse
+    scope: ScopeResponse
+    sensitive_case: SensitiveCaseResponse
     decision: DecisionResponse
     metadata: dict[str, Any] = Field(default_factory=dict)
 
-    # Legacy flat fields for backward compatibility with existing tests
-    decision_legacy: str | None = None
-    intent: str | None = None
-    domain: str | None = None
-    route: str | None = None
-
 
 class FeedbackRequest(BaseModel):
-    """Human agent correction or feedback submission schema."""
-    request_id: str = Field(..., description="Mã request_id của ticket cần hiệu chỉnh")
-    reviewed_intent: str = Field(..., description="Nhãn ý định chính xác được nhân viên xác nhận")
-    reviewed_queue: str | None = Field(default=None, description="Queue cuối cùng do chuyên viên xác nhận")
-    resolution: str = Field(default="reviewed", description="Kết quả xử lý review")
-    reviewer_id: str = Field(default="human_agent", description="ID định danh chuyên viên xử lý")
-    notes: str | None = Field(default=None, description="Ghi chú nghiệp vụ (được lọc PII tự động)")
-    reason_code: str | None = Field(default=None, description="Mã lý do review/correction")
+    request_id: str
+    reviewed_intent: str
+    reviewed_queue: str | None = None
+    resolution: str = "reviewed"
+    reviewer_id: str = "human_agent"
+    notes: str | None = None
+    reason_code: str | None = None

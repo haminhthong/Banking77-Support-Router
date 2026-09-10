@@ -1,4 +1,4 @@
-"""Metric an toàn theo queue và security risk thực tế."""
+"""Metric routing theo queue và sensitive-case review."""
 
 from __future__ import annotations
 
@@ -10,17 +10,17 @@ from ..routing.schemas import RoutingDecision, RoutingResult
 from ..routing.taxonomy import TaxonomyResolver
 
 
-def evaluate_operational_policy_metrics(
+def evaluate_routing_metrics(
     decisions: Sequence[RoutingDecision],
     predictions: np.ndarray,
     targets: np.ndarray,
-    high_risk_intents: frozenset[str] | None = None,
+    sensitive_intents: frozenset[str] | None = None,
     routing_results: Sequence[RoutingResult] | None = None,
     taxonomy: TaxonomyResolver | None = None,
 ) -> dict[str, Any]:
-    """Đo wrong-queue, coverage và security recall của toàn bộ policy.
+    """Đo wrong-queue, coverage và sensitive-case recall của policy.
 
-    ``predictions`` vẫn nhận để tương thích, nhưng auto-route correctness dùng
+    ``predictions`` dùng để báo cáo thêm intent accuracy, còn auto-route correctness dùng
     queue đích khi có taxonomy/routing result; không đánh tráo queue bằng fine
     intent accuracy.
     """
@@ -50,17 +50,17 @@ def evaluate_operational_policy_metrics(
     else:
         auto_queue_accuracy = auto_queue_error = auto_intent_accuracy = 0.0
 
-    risk_intents = (
-        taxonomy.get_critical_intents()
+    selected_sensitive_intents = (
+        taxonomy.get_sensitive_intents()
         if taxonomy is not None
-        else frozenset(high_risk_intents or ())
+        else frozenset(sensitive_intents or ())
     )
-    true_risk = np.isin(targets, list(risk_intents))
-    true_risk_count = int(true_risk.sum())
-    correctly_escalated = int((true_risk & priority_mask).sum())
+    sensitive_targets = np.isin(targets, list(selected_sensitive_intents))
+    sensitive_count = int(sensitive_targets.sum())
+    correctly_reviewed = int((sensitive_targets & priority_mask).sum())
     priority_count = int(priority_mask.sum())
-    recall = float(correctly_escalated / true_risk_count) if true_risk_count else 1.0
-    precision = float(correctly_escalated / priority_count) if priority_count else 1.0
+    recall = float(correctly_reviewed / sensitive_count) if sensitive_count else 1.0
+    precision = float(correctly_reviewed / priority_count) if priority_count else 1.0
 
     result = {
         "operational_auto_route_count": auto_count,
@@ -72,17 +72,17 @@ def evaluate_operational_policy_metrics(
         "auto_route_intent_accuracy": round(auto_intent_accuracy, 4),
         "operational_human_review_count": int(human_mask.sum()),
         "operational_human_review_rate": round(float(human_mask.mean()), 4),
-        "operational_priority_escalation_count": priority_count,
-        "operational_priority_escalation_rate": round(float(priority_mask.mean()), 4),
-        "high_risk_true_samples": true_risk_count,
-        "high_risk_correctly_escalated": correctly_escalated,
-        "high_risk_escalation_recall": round(recall, 4),
-        "high_risk_escalation_precision": round(precision, 4),
+        "operational_priority_review_count": priority_count,
+        "operational_priority_review_rate": round(float(priority_mask.mean()), 4),
+        "sensitive_case_true_samples": sensitive_count,
+        "sensitive_case_correctly_reviewed": correctly_reviewed,
+        "sensitive_case_recall": round(recall, 4),
+        "sensitive_case_precision": round(precision, 4),
     }
     if routing_results is not None:
-        result["risk_group_counts"] = {
-            category: sum(1 for item in routing_results if item.risk.risk_category == category)
-            for category in sorted({item.risk.risk_category for item in routing_results if item.risk.risk_category})
+        result["sensitive_group_counts"] = {
+            category: sum(1 for item in routing_results if item.sensitive_case.sensitive_category == category)
+            for category in sorted({item.sensitive_case.sensitive_category for item in routing_results if item.sensitive_case.sensitive_category})
         }
     return result
 

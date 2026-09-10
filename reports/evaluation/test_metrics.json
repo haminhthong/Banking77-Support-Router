@@ -1,0 +1,109 @@
+{
+  "benchmark": "official_untouched",
+  "total_test_samples": 3080,
+  "queue_threshold": 0.95,
+  "sensitive_threshold": 0.1,
+  "test_accuracy": 0.9016,
+  "test_macro_f1": 0.9019,
+  "test_top3_accuracy": 0.9705,
+  "domain_taxonomy_accuracy": 0.9568,
+  "test_ece": 0.014,
+  "test_log_loss": 0.359,
+  "test_brier_score": 0.1464,
+  "classifier_acceptance_coverage": 0.7088,
+  "classifier_accepted_accuracy": 0.9895,
+  "classifier_selective_risk": 0.0105,
+  "classifier_accepted_count": 2183,
+  "aurc": 0.0147,
+  "coverage_at_5pct_risk": 0.8971,
+  "coverage_at_3pct_risk": 0.826,
+  "operational_auto_route_count": 2282,
+  "operational_auto_route_coverage": 0.7409,
+  "operational_auto_route_accuracy": 0.9947,
+  "operational_auto_route_error": 0.0053,
+  "auto_route_queue_accuracy": 0.9947,
+  "auto_route_wrong_queue_rate": 0.0053,
+  "auto_route_intent_accuracy": 0.9579,
+  "operational_human_review_count": 501,
+  "operational_human_review_rate": 0.1627,
+  "operational_priority_review_count": 297,
+  "operational_priority_review_rate": 0.0964,
+  "sensitive_case_true_samples": 280,
+  "sensitive_case_correctly_reviewed": 266,
+  "sensitive_case_recall": 0.95,
+  "sensitive_case_precision": 0.8956,
+  "sensitive_group_counts": {
+    "account_compromise": 803,
+    "physical_card_security": 826,
+    "unauthorized_cash": 534,
+    "unauthorized_transaction": 917
+  },
+  "scope_smoke": {
+    "ood_evaluated": true,
+    "scope_split": "locked",
+    "ood_total_samples": 10,
+    "ood_detected_count": 2,
+    "ood_recall": 0.2,
+    "ood_false_acceptance_rate": 0.0,
+    "safe_containment_rate": 1.0,
+    "oos_auto_route_rate": 0.0,
+    "oos_containment_rate": 1.0,
+    "auto_routed_count": 0,
+    "human_reviewed_count": 10,
+    "priority_escalated_count": 0,
+    "category_breakdown": {
+      "greeting": {
+        "total": 1,
+        "detected": 0,
+        "auto_routed": 0
+      },
+      "general_knowledge": {
+        "total": 1,
+        "detected": 0,
+        "auto_routed": 0
+      },
+      "unsupported_product_mortgage": {
+        "total": 1,
+        "detected": 0,
+        "auto_routed": 0
+      },
+      "unsupported_product_crypto": {
+        "total": 1,
+        "detected": 0,
+        "auto_routed": 0
+      },
+      "unsupported_product_brokerage": {
+        "total": 1,
+        "detected": 0,
+        "auto_routed": 0
+      },
+      "technical_support_irrelevant": {
+        "total": 1,
+        "detected": 0,
+        "auto_routed": 0
+      },
+      "gibberish": {
+        "total": 1,
+        "detected": 1,
+        "auto_routed": 0
+      },
+      "too_short": {
+        "total": 1,
+        "detected": 1,
+        "auto_routed": 0
+      },
+      "corporate_info": {
+        "total": 1,
+        "detected": 0,
+        "auto_routed": 0
+      },
+      "wealth_management": {
+        "total": 1,
+        "detected": 0,
+        "auto_routed": 0
+      }
+    }
+  },
+  "auto_route_coverage": 0.7409,
+  "auto_route_accuracy": 0.9947
+}

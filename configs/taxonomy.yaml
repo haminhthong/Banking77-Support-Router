@@ -82,24 +82,24 @@ intents:
     priority: high
   card_swallowed:
     domain: atm_cash
-    queue: fraud_security_queue
+    queue: sensitive_case_review_queue
     priority: critical
-    risk:
+    sensitive_case:
       category: physical_card_security
       tier: critical
-      priority_escalation: true
+      priority_review: true
   cash_withdrawal_charge:
     domain: atm_cash
     queue: fee_inquiry_queue
     priority: normal
   cash_withdrawal_not_recognised:
     domain: atm_cash
-    queue: fraud_security_queue
+    queue: sensitive_case_review_queue
     priority: critical
-    risk:
+    sensitive_case:
       category: unauthorized_cash
       tier: critical
-      priority_escalation: true
+      priority_review: true
   declined_cash_withdrawal:
     domain: atm_cash
     queue: atm_support_queue
@@ -112,10 +112,10 @@ intents:
     domain: atm_cash
     queue: payment_investigation_queue
     priority: critical
-    risk:
+    sensitive_case:
       category: cash_discrepancy
       tier: high
-      priority_escalation: false
+      priority_review: false
   wrong_exchange_rate_for_cash_withdrawal:
     domain: atm_cash
     queue: fee_inquiry_queue
@@ -128,28 +128,28 @@ intents:
     priority: high
   compromised_card:
     domain: account_security
-    queue: fraud_security_queue
+    queue: sensitive_case_review_queue
     priority: critical
-    risk:
+    sensitive_case:
       category: account_compromise
       tier: critical
-      priority_escalation: true
+      priority_review: true
   lost_or_stolen_card:
     domain: account_security
-    queue: fraud_security_queue
+    queue: sensitive_case_review_queue
     priority: critical
-    risk:
+    sensitive_case:
       category: physical_card_security
       tier: critical
-      priority_escalation: true
+      priority_review: true
   lost_or_stolen_phone:
     domain: account_security
-    queue: fraud_security_queue
+    queue: sensitive_case_review_queue
     priority: critical
-    risk:
+    sensitive_case:
       category: account_compromise
       tier: critical
-      priority_escalation: true
+      priority_review: true
   passcode_forgotten:
     domain: account_security
     queue: security_support_queue
@@ -194,12 +194,12 @@ intents:
     priority: high
   direct_debit_payment_not_recognised:
     domain: transfers_payments
-    queue: fraud_security_queue
+    queue: sensitive_case_review_queue
     priority: critical
-    risk:
+    sensitive_case:
       category: unauthorized_transaction
       tier: critical
-      priority_escalation: true
+      priority_review: true
   failed_transfer:
     domain: transfers_payments
     queue: transfer_investigation_queue
@@ -282,12 +282,12 @@ intents:
     priority: normal
   card_payment_not_recognised:
     domain: transactions_refunds
-    queue: fraud_security_queue
+    queue: sensitive_case_review_queue
     priority: critical
-    risk:
+    sensitive_case:
       category: unauthorized_transaction
       tier: critical
-      priority_escalation: true
+      priority_review: true
   card_payment_wrong_exchange_rate:
     domain: transactions_refunds
     queue: fee_inquiry_queue
@@ -363,17 +363,17 @@ intents:
 
 # Queue vận hành dùng cho fallback và escalation
 system_queues:
-  priority_fraud_security: fraud_security_queue
+  priority_sensitive_case: sensitive_case_review_queue
   general_human_review: general_human_review_queue
-  ood_review: general_human_review_queue
+  scope_review: general_human_review_queue
 
-# Queue escalation theo nhóm risk, tránh hard-code trong policy engine
-risk_groups:
+# Queue review theo nhóm intent nhạy cảm
+sensitive_groups:
   physical_card_security:
-    escalation_queue: fraud_security_queue
+    review_queue: sensitive_case_review_queue
   unauthorized_cash:
-    escalation_queue: fraud_security_queue
+    review_queue: sensitive_case_review_queue
   unauthorized_transaction:
-    escalation_queue: fraud_security_queue
+    review_queue: sensitive_case_review_queue
   account_compromise:
-    escalation_queue: fraud_security_queue
+    review_queue: sensitive_case_review_queue

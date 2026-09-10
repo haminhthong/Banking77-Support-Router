@@ -22,7 +22,7 @@ class ScopeClassifier:
     """Wrapper nhỏ để runtime chỉ cần gọi ``predict_proba``."""
 
     pipeline: Pipeline
-    model_version: str = "scope-word-char-lr-v1"
+    model_name: str = "scope-word-char-logistic-regression"
 
     @property
     def classes_(self) -> np.ndarray:

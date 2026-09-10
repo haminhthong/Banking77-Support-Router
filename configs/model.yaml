@@ -1,6 +1,5 @@
 # ML Classifier and Calibration Pipeline Configuration
 
-model_version: "banking77-tfidf-char-lr-v5"
 seed: 42
 
 features:
@@ -27,6 +26,6 @@ classifier:
     n_jobs: null
 
 calibration:
-  method: "temperature_candidate"
+  method: "temperature_or_raw"
   selection_metric: "nll"
   selection_split: "policy_validation"

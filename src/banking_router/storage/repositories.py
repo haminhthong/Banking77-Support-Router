@@ -22,11 +22,11 @@ class TicketRepository:
             connection.execute(
                 """
                 INSERT INTO tickets (
-                    request_id, created_at, text_redacted, model_version,
-                    policy_version, predicted_intent, intent_confidence,
-                    predicted_queue, queue_confidence, critical_risk_probability,
+                    request_id, created_at, text_redacted, model_name,
+                    predicted_intent, intent_confidence, predicted_queue,
+                    queue_confidence, sensitive_probability_mass,
                     decision, queue_id, priority, status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(request_id) DO UPDATE SET
                     text_redacted=excluded.text_redacted,
                     decision=excluded.decision,
@@ -37,13 +37,12 @@ class TicketRepository:
                     result.request_id,
                     now,
                     redact_pii(raw_text),
-                    result.metadata.get("model_version", "unknown"),
-                    result.metadata.get("policy_version", "unknown"),
+                    result.metadata.get("model", "banking77-router"),
                     result.prediction.intent,
                     result.prediction.confidence,
                     queue_prediction.queue if queue_prediction else result.decision.queue_id,
                     queue_prediction.confidence if queue_prediction else result.prediction.confidence,
-                    result.risk.critical_probability,
+                    result.sensitive_case.sensitive_probability_mass,
                     result.decision.action,
                     result.decision.queue_id,
                     result.decision.priority,
