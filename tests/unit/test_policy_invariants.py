@@ -1,6 +1,7 @@
 """Kiểm thử invariant cho luồng xác suất và routing policy."""
 
 import numpy as np
+
 from src.banking_router.data.contracts import (
     BANKING77_77_CLASSES,
     get_domain_for_intent,

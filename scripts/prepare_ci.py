@@ -5,10 +5,9 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from scripts.download_data import main as download_data
 from src.banking_router.config import ARTIFACTS_DIR
 from src.banking_router.modeling.artifact import load_artifacts
-
-from scripts.download_data import main as download_data
 
 ROOT = Path(__file__).resolve().parents[1]
 

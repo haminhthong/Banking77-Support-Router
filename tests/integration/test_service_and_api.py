@@ -1,6 +1,7 @@
 """Kiểm thử tích hợp artifact chuẩn, service và FastAPI."""
 
 from fastapi.testclient import TestClient
+
 from src.banking_router.api.app import app
 from src.banking_router.config import ARTIFACTS_DIR
 from src.banking_router.data.contracts import BANKING77_77_CLASSES

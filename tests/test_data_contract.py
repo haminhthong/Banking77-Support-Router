@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pandas as pd
+
 from src.banking_router.data import (
     BANKING77_77_CLASSES,
     INTENT_TO_DOMAIN,

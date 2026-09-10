@@ -6,6 +6,7 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
 from fastapi.testclient import TestClient
+
 from src.banking_router.api.app import app
 
 client = TestClient(app)

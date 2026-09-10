@@ -1,6 +1,7 @@
 """Kiểm thử hồi quy cho queue projection, sensitive mass và scope."""
 
 import numpy as np
+
 from src.banking_router.data.contracts import BANKING77_77_CLASSES
 from src.banking_router.routing.escalation import SensitiveIntentGuard
 from src.banking_router.routing.policy import RoutingPolicy
