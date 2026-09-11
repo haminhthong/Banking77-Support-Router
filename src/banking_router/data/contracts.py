@@ -180,7 +180,7 @@ INTENT_TO_DOMAIN: dict[str, str] = {
 
 assert set(INTENT_TO_DOMAIN.keys()) == set(
     BANKING77_77_CLASSES
-), "Taxonomy mapping does not match exact 77 classes!"
+), "Ánh xạ taxonomy không khớp chính xác 77 lớp!"
 
 
 def get_domain_for_intent(intent: str) -> str:

@@ -7,15 +7,6 @@ from typing import Any
 
 
 @dataclass(frozen=True)
-class IntentAlternative:
-    """Một intent thay thế để hiển thị cho client."""
-
-    intent: str
-    domain: str
-    confidence: float
-
-
-@dataclass(frozen=True)
 class IntentPrediction:
     """Prediction thuần ML, tách khỏi quyết định routing."""
 

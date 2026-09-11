@@ -46,12 +46,6 @@ class RoutingService:
         model = self.model
         if hasattr(model, "estimator"):
             model = model.estimator
-        elif (
-            hasattr(model, "calibrated_classifiers_") and model.calibrated_classifiers_
-        ):
-            model = model.calibrated_classifiers_[0].estimator
-        if hasattr(model, "estimator"):
-            model = model.estimator
         if not hasattr(model, "named_steps"):
             return
         features = model.named_steps.get("features")

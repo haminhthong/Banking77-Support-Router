@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 import pandas as pd
+
 from .contracts import BANKING77_77_CLASSES
 from .normalization import normalize_pii_semantically
 
@@ -66,7 +68,7 @@ def load_official_test(raw_dir: Path | str = "data/raw") -> pd.DataFrame:
     unknown_intents = set(normalized["intent"]) - set(BANKING77_77_CLASSES)
     if unknown_intents:
         raise ValueError(
-            f"Official test dataset contains unknown intents: {unknown_intents}"
+            f"Tập test chính thức chứa intent không xác định: {unknown_intents}"
         )
 
     return normalized.reset_index(drop=True)

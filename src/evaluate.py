@@ -25,7 +25,7 @@ def evaluate_model(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Evaluate Banking77 Support Router")
+    parser = argparse.ArgumentParser(description="Đánh giá Banking77 Support Router")
     parser.add_argument("--artifacts-dir", default="artifacts")
     parser.add_argument("--reports-dir", default="reports/evaluation")
     parser.add_argument("--raw-dir", default="data/raw")

@@ -4,7 +4,6 @@ from .escalation import SensitiveIntentGuard
 from .policy import RoutingPolicy
 from .queue_projector import QueueProjector
 from .schemas import (
-    IntentAlternative,
     IntentPrediction,
     QueuePrediction,
     RoutingDecision,
@@ -16,7 +15,6 @@ from .service import RoutingService
 from .taxonomy import TaxonomyResolver
 
 __all__ = [
-    "IntentAlternative",
     "IntentPrediction",
     "QueuePrediction",
     "QueueProjector",

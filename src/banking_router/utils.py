@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 import random
 import sys
 from contextlib import suppress
-from pathlib import Path
-from typing import Any
 
 import numpy as np
 
@@ -33,10 +30,3 @@ def set_seed(seed: int) -> None:
     """Cố định seed để các lần chạy có thể tái lập."""
     random.seed(seed)
     np.random.seed(seed)
-
-
-def save_json(path: str | Path, payload: dict[str, Any] | list[Any]) -> None:
-    """Ghi dictionary hoặc list thành JSON UTF-8 có thụt dòng."""
-    p = Path(path)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

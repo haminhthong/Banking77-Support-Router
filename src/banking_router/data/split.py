@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any, Literal
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
@@ -30,7 +31,7 @@ def load_training_splits(
     """
     train_path = Path(raw_dir) / "train.csv"
     if not train_path.exists():
-        raise FileNotFoundError(f"Missing train dataset: {train_path}")
+        raise FileNotFoundError(f"Không tìm thấy tập train: {train_path}")
 
     # 1. Đọc train thô và chuẩn hóa text.
     raw_train = read_raw_dataset(train_path)
@@ -40,7 +41,8 @@ def load_training_splits(
     audit_res = audit_dataset(norm_train)
     if audit_res["conflicting_label_count"] > 0:
         raise ValueError(
-            f"Pre-dedup audit detected conflicting labels in train.csv: {audit_res['conflicts']}"
+            "Audit trước khi loại trùng phát hiện nhãn xung đột trong train.csv: "
+            f"{audit_res['conflicts']}"
         )
 
     # 3. Làm sạch và loại trùng trong pool phát triển.

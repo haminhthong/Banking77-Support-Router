@@ -21,11 +21,11 @@ class QueueProjector:
         values = np.asarray(probabilities, dtype=float)
         if values.ndim != 1 or len(values) != len(self.classes):
             raise ValueError(
-                f"Expected one probability per class ({len(self.classes)}), got {values.shape}"
+                f"Cần một xác suất cho mỗi lớp ({len(self.classes)}), nhận shape {values.shape}"
             )
         total = float(values.sum())
         if total <= 0.0:
-            raise ValueError("Intent probabilities must contain positive mass")
+            raise ValueError("Xác suất intent phải có tổng khối lượng dương")
         values = values / total
 
         queue_probabilities: dict[str, float] = {}

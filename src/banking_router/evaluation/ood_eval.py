@@ -20,7 +20,7 @@ def evaluate_ood_benchmark(
     if not path.exists():
         return {
             "ood_evaluated": False,
-            "reason": f"OOD evaluation dataset not found at {path}",
+            "reason": f"Không tìm thấy tập đánh giá OOD tại {path}",
         }
 
     if split == "all":
@@ -34,7 +34,7 @@ def evaluate_ood_benchmark(
         records = load_scope_splits(path).get(split, [])
 
     if not records:
-        return {"ood_evaluated": False, "reason": "Empty OOD evaluation dataset"}
+        return {"ood_evaluated": False, "reason": "Tập đánh giá OOD rỗng"}
 
     total_samples = len(records)
     ood_detected_count = 0

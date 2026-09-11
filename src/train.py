@@ -12,7 +12,7 @@ from src.banking_router.utils import set_seed, setup_logging
 def main() -> None:
     setup_logging()
     set_seed(SEED)
-    parser = argparse.ArgumentParser(description="Train Banking77 Support Router")
+    parser = argparse.ArgumentParser(description="Huấn luyện Banking77 Support Router")
     parser.add_argument(
         "--benchmark", choices=["official", "strict_decontaminated"], default="official"
     )
