@@ -4,15 +4,14 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.banking_router.data import (
+from src.banking_router.data.audit import audit_conflicting_labels
+from src.banking_router.data.contracts import (
     BANKING77_77_CLASSES,
     INTENT_TO_DOMAIN,
-    audit_conflicting_labels,
     get_domain_for_intent,
-    load_training_splits,
-    read_raw_dataset,
-    summarize_split_quality,
 )
+from src.banking_router.data.loader import read_raw_dataset
+from src.banking_router.data.split import load_training_splits, summarize_split_quality
 
 
 def test_read_banking77_normalizes_columns_and_order(tmp_path: Path):

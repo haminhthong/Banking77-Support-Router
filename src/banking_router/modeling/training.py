@@ -17,9 +17,9 @@ from ..config import (
     get_routing_policy_config,
     get_taxonomy_config,
 )
-from ..data import load_training_splits, summarize_split_quality
 from ..data.normalization import NORMALIZATION_VERSION
 from ..data.scope import load_scope_splits
+from ..data.split import load_training_splits, summarize_split_quality
 from ..evaluation.metrics import entropy, expected_calibration_error
 from ..routing.escalation import SensitiveIntentGuard
 from ..routing.policy import RoutingPolicy

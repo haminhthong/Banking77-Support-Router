@@ -9,7 +9,7 @@ from typing import Any
 import numpy as np
 
 from ..config import ARTIFACTS_DIR
-from ..data import load_official_test
+from ..data.loader import load_official_test
 from ..modeling.artifact import load_artifacts
 from ..routing.escalation import SensitiveIntentGuard
 from ..routing.policy import RoutingPolicy
