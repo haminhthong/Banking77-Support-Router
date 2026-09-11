@@ -6,13 +6,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Cài dependency runtime, không đưa tool train/test vào image API.
+# Cài dependency runtime; image API không chứa công cụ train/test.
 COPY requirements.txt .
 RUN python -m pip install -r requirements.txt \
     && addgroup --system app \
     && adduser --system --ingroup app app
 
-# Image chỉ chứa source inference và artifact canonical.
+# Image chỉ chứa mã suy luận và artifact chuẩn duy nhất.
 COPY --chown=app:app src ./src
 COPY --chown=app:app artifacts ./artifacts
 
@@ -20,7 +20,7 @@ COPY --chown=app:app artifacts ./artifacts
 RUN mkdir -p /app/reports \
     && chown -R app:app /app/reports
 
-# Fail ngay lúc build nếu artifact không load hoặc không đủ 77 intent.
+# Dừng build nếu artifact không load hoặc không đủ 77 intent.
 RUN python -c "from src.banking_router.config import ARTIFACTS_DIR; from src.banking_router.modeling.artifact import load_artifacts; artifacts = load_artifacts(ARTIFACTS_DIR); assert len(artifacts.intent_model.classes_) == 77"
 
 USER app

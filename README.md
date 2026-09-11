@@ -173,7 +173,7 @@ source .venv/bin/activate
 python -m pip install -r requirements-dev.txt
 ```
 
-`requirements.txt` chỉ chứa dependency runtime để Docker/API không kéo theo pandas, pytest hoặc Ruff. `requirements-dev.txt` kế thừa runtime và thêm tool tải dữ liệu, train/evaluate, test và lint.
+`requirements.txt` chỉ chứa dependency runtime để Docker/API không kéo theo pandas, pytest hoặc Ruff. `scikit-learn` được khóa ở `1.7.1` để khớp với các artifact joblib đã train và tránh cảnh báo tương thích khi load model. `requirements-dev.txt` kế thừa runtime và thêm tool tải dữ liệu, train/evaluate, test và lint.
 
 ## Huấn luyện và đánh giá
 
