@@ -40,7 +40,7 @@ def main() -> None:
     for key, value in metrics.items():
         if isinstance(value, float):
             print(f"{key}: {value:.4f}")
-        elif not isinstance(value, (dict, list)):
+        elif not isinstance(value, dict | list):
             print(f"{key}: {value}")
 
 

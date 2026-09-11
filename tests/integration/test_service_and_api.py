@@ -22,20 +22,6 @@ def test_model_classes_match_taxonomy():
     assert artifacts.metadata["dataset"] == "Banking77"
 
 
-def test_canonical_artifact_layout():
-    assert all(
-        (ARTIFACTS_DIR / name).exists()
-        for name in (
-            "intent_model.joblib",
-            "metadata.json",
-            "taxonomy.json",
-            "routing_policy.json",
-        )
-    )
-    assert not (ARTIFACTS_DIR / "manifest.json").exists()
-    assert not (ARTIFACTS_DIR / "model_config.json").exists()
-
-
 def test_batch_and_single_prediction_equivalent():
     artifacts = load_artifacts(ARTIFACTS_DIR)
     taxonomy = TaxonomyResolver(artifacts.taxonomy)

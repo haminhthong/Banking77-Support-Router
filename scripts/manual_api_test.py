@@ -1,18 +1,21 @@
-import sys
-from pathlib import Path
+"""Script kiểm thử thủ công API qua TestClient."""
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8")
+from __future__ import annotations
+
+import sys
 
 from fastapi.testclient import TestClient
 
 from src.banking_router.api.app import app
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 client = TestClient(app)
 
 
-def test_api():
+def run_manual_api_test() -> None:
+    """Thực hiện các lệnh gọi mẫu vào FastAPI probes và endpoints."""
     print("=== 1. KIỂM THỬ HEALTH PROBES ===")
     live_res = client.get("/health/live")
     print("GET /health/live:", live_res.json())
@@ -95,4 +98,4 @@ def test_api():
 
 
 if __name__ == "__main__":
-    test_api()
+    run_manual_api_test()

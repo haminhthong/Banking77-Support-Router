@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .pytest_tmp/
+.pytest_temp/
 reports/*.sqlite3
 reports/*.jsonl
 reports/training/
