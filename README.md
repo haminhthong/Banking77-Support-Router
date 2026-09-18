@@ -27,17 +27,23 @@ Toàn bộ training, evaluation, API và test cùng bám vào pipeline sau:
 flowchart TD
     A[Customer ticket] --> B[PII normalization]
     B --> C[Word TF-IDF + Character TF-IDF]
-    C --> D[Calibrated Logistic Regression]
-    D --> E[77 intent probabilities]
-    E --> F[Queue projection\naggregate probability by queue]
-    E --> G[ScopeGuard\ninput quality + OOD smoke behavior]
-    E --> H[SensitiveIntentGuard\nprobability mass of sensitive intents]
-    F --> I[RoutingPolicy]
-    G --> I
-    H --> I
-    I --> J[AUTO_ROUTE]
-    I --> K[HUMAN_REVIEW]
-    K --> L[Optional SQLite review feedback]
+    C --> D[Logistic Regression]
+    D --> E[Select raw vs temperature-scaled probabilities]
+    E --> F[77 intent probabilities]
+    F --> G[Queue projection<br/>aggregate probability by queue]
+    B --> H[ScopeGuard<br/>input quality + scope]
+    F --> H
+    F --> I[SensitiveIntentGuard<br/>probability mass of sensitive intents]
+    G --> J[RoutingPolicy]
+    H --> J
+    I --> J
+    J --> K[auto_route]
+    J --> L[human_review]
+    J --> M[priority_human_review]
+    K --> N[SQLite ticket record]
+    L --> N
+    M --> N
+    N --> O[Optional reviewer feedback]
 ```
 
 ### Thứ tự quyết định
@@ -48,6 +54,8 @@ flowchart TD
 2. Ticket ngoài scope hoặc input quá kém? → `human_review`.
 3. Queue probability, queue margin, intent margin hoặc entropy chưa đạt threshold? → `human_review`.
 4. Các điều kiện đều đạt? → `auto_route` tới queue được chọn.
+
+Trong code, ba action cuối là các giá trị riêng: `auto_route`, `human_review` và `priority_human_review`. Hai action review đều được lưu cùng ticket vào SQLite; feedback reviewer là bước tùy chọn sau đó.
 
 ### Queue projection
 
@@ -72,7 +80,7 @@ Ba intent đầu thuộc `transfers_queue`, vì vậy queue probability là `0.8
 
 ### Calibration và selective classification
 
-Pipeline so sánh xác suất raw với temperature-scaled probabilities trên policy-validation split. Evaluation giữ ECE, log loss, Brier score và risk–coverage curve.
+Pipeline so sánh xác suất raw với temperature-scaled probabilities trên policy-validation split và chọn temperature scaling khi NLL tốt hơn; nếu không, giữ raw probability. Evaluation giữ ECE, log loss, Brier score và risk–coverage curve.
 
 Ý nghĩa selective routing:
 
@@ -147,7 +155,7 @@ Banking77-Support-Router/
 
 `artifacts/` là source of truth duy nhất cho inference. Không còn `models/releases`, `production.json`, release promotion, manifest/checksum bundle hoặc các bản config/model trùng lặp.
 
-`configs/routing_policy.yaml` chỉ chứa mục tiêu thực nghiệm và các kiểm tra cố định dùng khi train. Threshold đã tối ưu cho serving được ghi một lần vào `artifacts/routing_policy.json`; API, evaluator và test đều đọc từ artifact này. Seed tái lập được khai báo duy nhất là `SEED = 42` trong `src/banking_router/config.py`.
+`configs/routing_policy.yaml` chỉ chứa mục tiêu thực nghiệm và các kiểm tra cố định dùng khi train. Threshold đã tối ưu cho serving được ghi vào một file duy nhất là `artifacts/routing_policy.json`; API, evaluator và test đều đọc từ artifact này. Seed tái lập được khai báo duy nhất là `SEED = 42` trong `src/banking_router/config.py`.
 
 ## Cài đặt
 
@@ -220,6 +228,13 @@ Các endpoint chính:
 - `POST /v1/feedback`: lưu kết quả review của một ticket đã tồn tại; ticket không tồn tại trả `404`.
 - `POST /v1/tickets/{request_id}/review`: cập nhật review cho ticket đã lưu.
 
+Contract request chính:
+
+- `RouteRequest.text`: bắt buộc, dài từ 2 đến 1.000 ký tự.
+- `RouteRequest.top_k`: từ 1 đến 5, mặc định `3`.
+- `BatchRouteRequest.tickets`: từ 1 đến 100 ticket.
+- `request_id`: tùy chọn; nếu bỏ trống service tự tạo mã dạng `req_<12 ký tự>`.
+
 Ví dụ:
 
 ```bash
@@ -236,10 +251,14 @@ Artifact canonical đã nằm trong repository nên image chỉ cài dependency 
 
 ```bash
 docker build -t banking77-support-router .
-docker run --rm -p 8000:8000 banking77-support-router
+docker volume create banking77-reports
+docker run --rm --name banking77-support-router \
+  -p 8000:8000 \
+  -v banking77-reports:/app/reports \
+  banking77-support-router
 ```
 
-Healthcheck của image gọi `/health/ready`. Container smoke test trong CI tiếp tục POST một ticket thật tới `/v1/route` sau khi readiness thành công.
+Volume là tùy chọn nhưng nên dùng nếu muốn giữ SQLite review sau khi container bị xóa. Nếu không mount volume, `/app/reports` chỉ tồn tại trong vòng đời container. Healthcheck của image gọi `/health/ready`. Container smoke test trong CI tiếp tục POST một ticket thật tới `/v1/route` sau khi readiness thành công.
 
 ## CI và kiểm thử
 
@@ -253,6 +272,12 @@ python -m compileall -q src scripts tests
 python -m pytest -q
 python -m ruff check src scripts tests
 python -m ruff format --check src scripts tests
+```
+
+Kiểm thử thủ công bằng FastAPI `TestClient` (không cần khởi động server riêng):
+
+```bash
+python -m scripts.manual_api_test
 ```
 
 ## Giới hạn và hướng mở rộng
